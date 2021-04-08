@@ -76,7 +76,6 @@ class AppDialog(QtGui.QWidget):
         self.setDefaultUiData()
         self._app.logger.info("$$$$ setDefaultUiData DONE ")
 
-        # self._app.logger.info("$$$$ self.pbMngr.getContext() = {}".format(self.pbMngr.getContext()))
         # via the self._app handle we can for example access:
         # - The engine, via self._app.engine
         # - A Shotgun API instance, via self._app.shotgun
@@ -90,6 +89,10 @@ class AppDialog(QtGui.QWidget):
         self.ui.createPlayblast.clicked.connect(self.doPlayblast)
 
     def setDefaultUiData(self):
+        """
+        method to set defaults in ui to minimize user input.
+        :return:
+        """
         try:
             # FRAME RANGE: from maya scene
             startFrame, endFrame = self.pbMngr.getFrameRange()
@@ -121,11 +124,15 @@ class AppDialog(QtGui.QWidget):
             self._app.logger.debug("Could not set the ui defaults -_-")
 
     def gatherUiData(self):
-        #change the encoding as per format choice
+        """
+        method to gather ui data.
+        :return:
+        """
+        # change the encoding as per format choice
         if str(self.ui.cb_format.currentText()) == "image":
             encoding = 'jpeg'
         else:
-            #if str(self.ui.cb_format.currentText) == "avi":
+            # if str(self.ui.cb_format.currentText) == "avi":
             encoding = 'None'
 
         playblastParams = {
@@ -135,7 +142,7 @@ class AppDialog(QtGui.QWidget):
             'forceOverwrite': True,
             'format': str(self.ui.cb_format.currentText()),
             'percent': float(self.ui.lineEdit_scale.text()) * 100,
-            #'compression': 'H.264',
+            # 'compression': 'H.264',
             'width': int(float(self.ui.lineEdit_finalRes_w.text())),
             'height': int(float(self.ui.lineEdit_finalRes_h.text())),
             'offScreen': True,
@@ -150,56 +157,14 @@ class AppDialog(QtGui.QWidget):
         return playblastParams
 
     def doPlayblast(self):
-        # if self.ui.createPlayblast.clicked():
-        #     createPlayblast.clicked.connect(createPlayblast)
-        temp_directory = "C:/work/tempPlayblast"
-        # make sure it is exists
-        if not os.path.isdir(temp_directory):
-            os.mkdir(temp_directory)
-
+        """
+        method envoked when ui's playblast button is clicked
+        :return:
+        """
         overridePlayblastParams = {}
         overridePlayblastParams = self.gatherUiData()
 
-        filename = "C:/work/tempPlayblast/mayaplayblast.mov"
-        # playblastfile = self.createPlayblast(filename)
-        playblastFile = self.pbMngr.createPlayblast(filename, overridePlayblastParams)
+        playblastFile = self.pbMngr.createPlayblast(overridePlayblastParams)
         self._app.logger.info("Playblast created = {}".format(playblastFile))
 
-        self.pbMngr.uploadToShotgun(playblastFile)
-
-        # uploadToShotgun = self._ui.chbUploadToShotgun.isChecked()
-        # self.setUploadToShotgun(uploadToShotgun)
-        #
-        # showViewer = self._ui.chbShowViewer.isChecked()
-        # overridePlayblastParams["viewer"] = showViewer
-        #
-        # percentInt = self._ui.cmbPercentage.itemData( self._ui.cmbPercentage.currentIndex() )
-        # overridePlayblastParams["percent"] = percentInt
-        # self._handler.doPlayblast(**overridePlayblastParams)
-    #
-    # def createPlayblast(self, filename, **kwargs):
-    #
-    #     filename = "C:/work/tempPlayblast/mayaplayblast.mov"
-    #     playblastParams = {
-    #                         'filename': filename,
-    #                         'offScreen': True,
-    #                         'percent': 50,
-    #                         'quality': 70,
-    #                         'viewer': True,
-    #                         'width': 960,
-    #                         'height': 540,
-    #                         'framePadding': 4,
-    #                         # 'format': 'image',
-    #                         'format': 'avi',
-    #                         #'encoding': 'none',
-    #                         # 'compression': 'H.264',
-    #                         'forceOverwrite': True,
-    #                         }
-    #     playblastParams.update(kwargs)
-    #
-    #     # if not self.focus:
-    #     #     self.focus = True
-    #     print "in playblast.py before creating playblast"
-    #     resultPlayblastPath = cmds.playblast(**playblastParams)
-    #     print "in playblast.py before return"
-    #     return resultPlayblastPath
+        #self.pbMngr.uploadToShotgun(playblastFile)

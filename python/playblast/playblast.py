@@ -11,6 +11,7 @@ try:
 except ImportError:
     from PyQt4 import QtCore, QtGui
 
+
 class PlayblastManager(object):
     __uploadToShotgun = True
 
@@ -32,7 +33,6 @@ class PlayblastManager(object):
             self._context = self._currentEngine.context
                 # self.getContext()
 
-        print "@@@ self._context = ", self._context
         self._app.logger.info("Playblast self._context = {}".format(self._context))
 
         self.playblastPath = None
@@ -68,7 +68,7 @@ class PlayblastManager(object):
         #tk = sgtk.sgtk_from_path(taskPath)
         #tk = currentEngine.sgtk
 
-            #self._app.logger.debug("tk = {}".format(tk))
+        # self._app.logger.debug("tk = {}".format(tk))
         #     self._app = sgtk.platform.current_bundle()
         #     self._current_engine = sgtk.platform.current_engine()
         #     self._context = self._current_engine.context
@@ -76,6 +76,12 @@ class PlayblastManager(object):
         #     self._toolkit = self._current_engine.sgtk
 
     def getFrameRange(self):
+        """
+        function to get frame range from current maya scene
+        :returns:
+            start (int): start frame
+            end (int): end frame
+        """
         start = int(cmds.playbackOptions(q=True, minTime=True))
         end = int(cmds.playbackOptions(q=True, maxTime=True))
         self._app.logger.debug("getfFrameRange(): start, end frame = {0}, {1}".format(start, end))
@@ -85,7 +91,15 @@ class PlayblastManager(object):
         # return int(cmds.playbackOptions(q=True, minTime=True)), \
         #        int(cmds.playbackOptions(q=True, maxTime=True))
 
-    def createPlayblast(self, filename, overridePlayblastParams, **kwargs):
+    def createPlayblast(self, overridePlayblastParams):
+        """
+        function to call maya's internal playblast command to create playblast
+        as per user input in ui.
+        :param
+            overridePlayblastParams (dict): user input from ui
+        :return:
+            playblastPath: output playblast file path.
+        """
         filename = "C:/work/tempPlayblast/mayaplayblast.mov"
         self.playblastParams.update(overridePlayblastParams)
         # TODO: filename
@@ -102,6 +116,14 @@ class PlayblastManager(object):
         return self.playblastPath
 
     def formatOutputPath(self):
+        """
+        function to format output file path as per template.
+            maya_playblast_publish_image
+            maya_playblast_publish_mov
+        in templates.yml in config
+        :return:
+             publishPath: formatted output file path
+        """
         # "@shot_export_area/{plate_name}/{Step}/{publish_type}/v{version}/@resolution/{ext}" \
         # "/{Shot}_{Step}_{pass_type}_[{name}_]v{version}[.{framecount}f].{ext}"
         # maya_playblast_publish_image
@@ -137,11 +159,10 @@ class PlayblastManager(object):
         fields["version"] = 001
         fields["pass_type"] = 'pass_type'
         print ("field values assigned")
-        # fields["name"] = "myscene" cmds.file()
-        # fields["version"] = 1
+
         publishPath = template.apply_fields(fields)
         self._app.logger.debug("publishPath: {}".format(publishPath))
-        current_engine.ensure_folder_exists(os.path.dirname(publishPath))
+        self._currentEngine.ensure_folder_exists(os.path.dirname(publishPath))
 
 
         sgtk.util.filesystem.touch_file(publishPath)
@@ -170,7 +191,7 @@ class PlayblastManager(object):
                     uses current entity
             Returns:
                 str: plate name parsed from PublishedFile of type Image
-            """
+        """
         pass_name = 'Main'
         # plates = get_plate_entity(context)
         plates = self._context.sgtk.shotgun.find(
