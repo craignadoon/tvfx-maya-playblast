@@ -139,8 +139,10 @@ class PlayblastManager(object):
             print(Exception)
             self._app.logger.debug("create_filesystem_structure failed")
 
-        template = self._tk.templates["maya_playblast_publish_image"]
-        # template = self._tk.templates["maya_playblast_publish_mov"]
+        if self.playblastParams[format] == "image":
+            template = self._tk.templates["maya_playblast_publish_image"]
+        else:
+            template = self._tk.templates["maya_playblast_publish_mov"]
 
         # template = self._tk.templates["maya_shot_publish"]
         # pprint.pprint("template = ", template)
@@ -151,12 +153,17 @@ class PlayblastManager(object):
         # 'ext', 'height', 'width', 'version', 'pass_type']
 
         # publish_type = ['Geometry', 'Locator', 'Camera', 'Lense', '2DTracks']
-        fields["publish_type"] = "Geometry"
+        if self.playblastParams[format] == "image":
+            fields["publish_type"] = "image"
+            fields["ext"] = "jpg"
+        else:
+            fields["publish_type"] = "movie"
+            fields["ext"] = "avi"
         fields["plate_name"] = self.getPlateName()
-        fields["ext"] = "mov"
         fields["height"] = int(self.playblastParams['height'])
         fields["width"] = int(self.playblastParams['width'])
         fields["version"] = 001
+        # TODO: pass_type: based on what?
         fields["pass_type"] = 'pass_type'
         print ("field values assigned")
 

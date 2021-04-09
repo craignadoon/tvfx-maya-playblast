@@ -2,16 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="55cf6c56-aac1-4404-8af4-6ac9551eb07f" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tvfx-maya-playblast.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../tk-basic2-deflect/core/templates_paths.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../tk-basic2-deflect/core/templates_paths.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/app_locations.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/app_locations.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tk-desktop.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tk-desktop.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tk-desktop2.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tk-desktop2.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tk-maya.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tk-maya.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tk-shell.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../tk-basic2-deflect/env/includes/settings/tk-shell.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../tk-basic2-deflect/env/shot_step.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../tk-basic2-deflect/env/shot_step.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/python/playblast/dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/playblast/dialog.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/python/playblast/playblast.py" beforeDir="false" afterPath="$PROJECT_DIR$/python/playblast/playblast.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -20,7 +11,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../tk-basic2-deflect" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectId" id="1qZjBQsq3hmvdmkQzeoe91xjbZR" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
