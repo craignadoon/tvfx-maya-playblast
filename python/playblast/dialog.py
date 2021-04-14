@@ -129,16 +129,22 @@ class AppDialog(QtGui.QWidget):
         :return:
         """
         # change the encoding as per format choice
-        if str(self.ui.cb_format.currentText()) == "image":
-            encoding = 'jpeg'
-        else:
-            # if str(self.ui.cb_format.currentText) == "avi":
-            encoding = 'None'
+        # if str(self.ui.cb_format.currentText()) == "image":
+        #     # encoding = 'jpeg'
+        #     #maya_output = self.pbMngr.get_temp_output(ext='jpeg')
+        # else:
+        #     # if str(self.ui.cb_format.currentText) == "avi":
+        #     #encoding = 'avi'
+        #     # encoding = 'H.264'
+        #     #maya_output = self.pbMngr.get_temp_output(ext='avi')
+
+        # self._app.logger.debug("(gatherUiData: encoding = {0}, maya_output = {1})".format(
+        #                                                                         encoding,
+        #                                                                         maya_output))
 
         playblastParams = {
             'startTime': int(self.ui.frameRange_start.text()),
             'endTime': int(self.ui.frameRange_end.text()),
-            'filename': self.pbMngr.formatOutputPath(),
             'forceOverwrite': True,
             'format': str(self.ui.cb_format.currentText()),
             'percent': float(self.ui.lineEdit_scale.text()) * 100,
@@ -149,10 +155,14 @@ class AppDialog(QtGui.QWidget):
             # 'quality': 70,
             # 'viewer': True,
             'framePadding': int(self.ui.lineEdit_framePadding.text()),
-            'compression': encoding
+            # 'filename': maya_output,
+            'filename': self.pbMngr.get_temp_output('.avi')  # self.pbMngr.formatOutputPath(),
+            # 'compression': encoding
         }
+
         self._app.logger.debug("playblastParams gathered: ")
         self._app.logger.debug(playblastParams)
+        # self._app.logger.debug("playblastParams['filename'] = {} ".format(playblastParams['filename']))
         pprint.pprint(playblastParams)
         return playblastParams
 
