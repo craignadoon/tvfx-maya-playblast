@@ -184,19 +184,30 @@ class PlayblastManager(object):
         self.playblastPath = self.formatOutputPath(ext)
         self._app.logger.debug("formatted playblastPath = {}".format(self.playblastPath))
 
-
-
+        # # check if any version of the published file exists on shotgun
+        # versioned_pb_path = self.check_published_version()
+        # self._app.logger.debug("createPlayblast: versioned_pb_path = {}".format(versioned_pb_path))
 
         if os.path.exists(self.mayaOutputPath):
             self._app.logger.debug("createPlayblast: going to copy to formatted path")
             result = shutil.move(self.mayaOutputPath, self.playblastPath)
             self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
 
-        # check if any version of the published file exists on shotgun
-        # version = self.get_playblast_ver(self.playblastPath)
-        # self._app.logger.debug("version = {}".format(version))
-
         return self.playblastPath
+
+    def check_published_version(self):
+        """
+        function to fetch the maya playblast version from filepath and replace it with correct version number
+        :return:
+        """
+        version = self.get_playblast_ver(self.playblastPath)
+        self._app.logger.debug("version = {}".format(version))
+        # replace with correct version number:
+        pbname, fileext = os.path.basename(self.playblastPath).split(".")
+        pbname = pbname[:-3]+('%03d' % version)
+        formattedPath = os.path.dirname(self.playblastPath) + pbname[:-3]+('%03d' % version) + fileext
+        self._app.logger.debug("formattedPath = {}".format(formattedPath))
+        return formattedPath
 
     def formatOutputPath(self, ext):
     # def formatOutputPath(self):
@@ -275,22 +286,18 @@ class PlayblastManager(object):
         print ("field values assigned")
 
         publishPath = template.apply_fields(fields)
-
-        self._app.logger.debug("publishPath: {}".format(publishPath))
+        self._app.logger.debug("get_playblast_ver(): 1) publishPath: {}".format(publishPath))
         #publishPath =
         #self._currentEngine.ensure_folder_exists(os.path.dirname(publishPath))
 
+        ver_result = self.get_playblast_ver(publishPath)
+        self._app.logger.debug("ver_result = {}".format(ver_result))
+        # replace with correct version number:
+        fields["version"] = ver_result
+        self._app.logger.debug("get_playblast_ver(): fields (updated version): {}".format(fields))
 
-
-        # try:
-        #
-        #     raw_publishPath = "%r" % publishPath
-        #     sgtk.util.filesystem.touch_file(raw_publishPath)
-        #     self._app.logger.debug("publishPath touched = {}".format(raw_publishPath))
-        # except OSError:
-        #     self._app.logger.error("some errrorr with file creation!!")
-        #     self._app.logger.error(OSError)
-        # raw_publishPath = '%r' % publishPath
+        publishPath = template.apply_fields(fields)
+        self._app.logger.debug("get_playblast_ver(): 2) publishPath (updated version): {}".format(publishPath))
 
         publishPath = "".join(publishPath.split(" "))  # remove whitespaces causing windows os errors
         try:
@@ -342,7 +349,6 @@ class PlayblastManager(object):
             filters.append(
                 ['project', 'is', self._context.project]
             )
-        self._app.logger.debug("get_playblast_ver: filters = {}".format(filters))
 
         # get path info
         # context = publisher.context
@@ -356,6 +362,7 @@ class PlayblastManager(object):
         path_info = publisher.util.get_file_path_components(path)
         filename = path_info['filename']
         VERSION_REGEX = r'v\s*([\d]+)'
+        # VERSION_REGEX = r'v(\d)+'
         version_pattern_match = re.search(VERSION_REGEX, os.path.basename(filename))
         if not version_pattern_match:
             error_msg = "Not able to detect version from given path: %s" % filename
@@ -369,6 +376,7 @@ class PlayblastManager(object):
         filters.append(
             ['code', 'starts_with', prefix],
         )
+
         # code: published file name (no ext/ver)
         # ext: version for ext
         if extension:
@@ -377,12 +385,16 @@ class PlayblastManager(object):
             filters.append(
                 ['published_file_type.PublishedFileType.code', 'is', publish_type]
             )
+
+        self._app.logger.debug("get_playblast_ver: filters = {}".format(filters))
+
         available_records = publisher.sgtk.shotgun.find_one(
             entity_type='PublishedFile',
             filters=filters,
             fields=['version_number'],
             order=[{'field_name': 'version_number', 'direction': 'desc'}]
         )
+        self._app.logger.debug("available_records = {}".format(available_records))
         if available_records:
             latest_version = available_records['version_number']
         else:
