@@ -134,12 +134,6 @@ class PlayblastManager(object):
         # if not self.focus:
         #     self.focus = True
         print "in playblast.py before creating playblast"
-
-        # self.playblastPath = cmds.playblast(**self.playblastParams)
-        # self.mayaOutputPath.close()
-
-        # cmds.file(self.mayaOutputPath.name, open=True, force=True)
-
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
         self._app.logger.debug("createPlayblast: mayaOutputPath = {}".format(self.mayaOutputPath))
 
@@ -161,7 +155,6 @@ class PlayblastManager(object):
             result = shutil.move(self.mayaOutputPath, self.playblastPath)
             self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
 
-        publish_name = os.path.basename(self.playblastPath)
         pbname, fileext = os.path.basename(self.playblastPath).split(".")
         self.uploadToShotgun(publish_name= pbname[:-5],
                              version_number=playblast_version)
@@ -177,19 +170,11 @@ class PlayblastManager(object):
         :return:
              publishPath: formatted output file path
         """
-        # "@shot_export_area/{plate_name}/{Step}/{publish_type}/v{version}/@resolution/{ext}" \
-        # "/{Shot}_{Step}_{pass_type}_[{name}_]v{version}[.{framecount}f].{ext}"
 
         # TODO: condn to check if its a shot context or not
         # TODO: warning if its not a shot context?
         # context = self.getContextInfo()
         template = None
-
-        # path_cache = tank.path_cache.PathCache(self._tk)
-        # path_cache_location = path_cache._get_path_cache_location()
-        # self._app.logger.debug("path_cache_location = {}".format(path_cache_location))
-        # path_cache.close()
-        # os.remove(path_cache_location)
 
         try:
             folders = self._tk.create_filesystem_structure("Task", self._context.task["id"])
@@ -229,14 +214,6 @@ class PlayblastManager(object):
         fields.keys()
         publishPath = template.apply_fields(fields)
         self._app.logger.debug("get_playblast_ver(): 1) publishPath: {}".format(publishPath))
-
-        # ver_result = self.get_playblast_ver(publishPath)
-        # self._app.logger.debug("ver_result = {}".format(ver_result))
-        # # replace with correct version number:
-        # fields["version"] = ver_result
-        # self._app.logger.debug("get_playblast_ver(): fields (updated version): {}".format(fields))
-        # publishPath = template.apply_fields(fields)
-        # self._app.logger.debug("get_playblast_ver(): 2) publishPath (updated version): {}".format(publishPath))
 
         publishPath = "".join(publishPath.split(" "))  # remove whitespaces causing windows os errors
         try:

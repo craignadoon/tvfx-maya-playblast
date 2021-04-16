@@ -8,10 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-import os
-import sys
-import threading
-# import maya.cmds as cmds
+
 import pprint
 
 # by importing QT from sgtk rather than directly, we ensure that
@@ -20,13 +17,6 @@ import sgtk
 from sgtk.platform.qt import QtCore, QtGui
 from .ui.dialog import Ui_Dialog
 from .playblast import PlayblastManager
-
-# sg frameworks
-# shotgun_fields = sgtk.platform.import_framework("tk-framework-qtwidgets", "shotgun_fields")
-# context_selector = sgtk.platform.import_framework("tk-framework-qtwidgets", "context_selector")
-# playback_label = sgtk.platform.import_framework("tk-framework-qtwidgets", "playback_label")
-# shotgun_globals = sgtk.platform.import_framework("tk-framework-shotgunutils", "shotgun_globals")
-# task_manager = sgtk.platform.import_framework("tk-framework-shotgunutils", "task_manager")
 
 logger = sgtk.platform.get_logger(__name__)
 
@@ -68,8 +58,6 @@ class AppDialog(QtGui.QWidget):
         # it is often handy to keep a reference to this. You can get it via the following method:
         self._app = sgtk.platform.current_bundle()
         self._app.logger.debug("$$$$ self._app = {}".format(self._app))
-        # tk = self._app.tk
-        # self._app.logger.info("tk instance = {}".format(tk))
         self.context = None
 
         self.pbMngr = PlayblastManager(self._app,self.context)
@@ -113,11 +101,7 @@ class AppDialog(QtGui.QWidget):
             # FORMAT: default playblast format is set to movie as of now
             self.ui.cb_format.setCurrentText(self.ui.cb_format.keys().index('avi'))
             self.ui.cb_encoding.setCurrentText(self.ui.cb_encoding.keys().index('None'))
-            #self.appExeCB.setCurrentIndex(self.items.keys().index('Maya Executable'))
-            #text = str(combobox1.currentText())
 
-            # self.ui.lineEdit_focalLength
-            # self.ui.cb_passType
             # comment
             self.ui.textEdit_comment.setText(str("playblast for {will shot give context}"))
         except:
