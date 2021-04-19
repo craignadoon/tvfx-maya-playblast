@@ -73,7 +73,7 @@ class AppDialog(QtGui.QWidget):
         self._app.logger.info("Track's maya playblast")
 
         # lastly, set up our very basic UI
-        self.ui.context.setText("Current selection type: %s, <br>Currently selected ids: %s" % (entity_type, entity_ids))
+        # self.ui.context.setText("Current selection type: %s, <br>Currently selected ids: %s" % (entity_type, entity_ids))
         self.ui.createPlayblast.clicked.connect(self.doPlayblast)
 
     def setDefaultUiData(self):
@@ -100,10 +100,13 @@ class AppDialog(QtGui.QWidget):
 
             # FORMAT: default playblast format is set to movie as of now
             self.ui.cb_format.setCurrentText(self.ui.cb_format.keys().index('avi'))
-            self.ui.cb_encoding.setCurrentText(self.ui.cb_encoding.keys().index('None'))
+            # self.ui.cb_encoding.setCurrentText(self.ui.cb_encoding.keys().index('None'))
 
             # comment
             self.ui.textEdit_comment.setText(str("playblast for {will shot give context}"))
+
+            # pass type
+            self.ui.cb_passType.setCurrentText(self.ui.cb_passType.keys().index('Greyshade'))
         except:
             self._app.logger.debug("Could not set the ui defaults -_-")
 
@@ -143,7 +146,7 @@ class AppDialog(QtGui.QWidget):
             'filename': self.pbMngr.get_temp_output('.avi')  # self.pbMngr.formatOutputPath(),
             # 'compression': encoding
         }
-
+        self.pbMngr.pass_type = str(self.ui.cb_passType.currentText())
         self._app.logger.debug("playblastParams gathered: ")
         self._app.logger.debug(playblastParams)
         # self._app.logger.debug("playblastParams['filename'] = {} ".format(playblastParams['filename']))
