@@ -45,6 +45,7 @@ class PlayblastManager(object):
         self._app.logger.info("Playblast self._context = {}".format(self._context))
 
         self.publish_type = "Playblast"
+        self.pass_type = None
         # self.mayaOutputPath = self.get_temp_output()
         self.mayaOutputPath = None
         self.playblastPath = None
@@ -83,10 +84,10 @@ class PlayblastManager(object):
         #     self._toolkit = self._current_engine.sgtk
 
     def get_temp_output(self, ext):
-
+        # todo: mktemp
         self.mayaOutputPath = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
         if self.mayaOutputPath.name:
-            self._app.logger.debug("get_temp_output:closing temp file")
+            # self._app.logger.debug("get_temp_output:closing temp file")
             # self.mayaOutputPath.close()
             pb_path_formatted = str(os.path.dirname(self.mayaOutputPath.name).title()
                                     + "\\"
@@ -133,6 +134,8 @@ class PlayblastManager(object):
         self._app.logger.debug(self.playblastParams)
         # if not self.focus:
         #     self.focus = True
+        panel = cmds.getPanel(withFocus=True)
+        cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
         print "in playblast.py before creating playblast"
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
         self._app.logger.debug("createPlayblast: mayaOutputPath = {}".format(self.mayaOutputPath))
@@ -238,7 +241,86 @@ class PlayblastManager(object):
             # with open(raw_publishPath, "w") as f:
             #     f.write("FOOBAR")
 
-        return publishPath, fields["version"]
+        # compare publish version with the version from path
+        published_version = self.get_published_version(publishPath, self.publish_type)
+
+        self._app.logger.debug("formatOutputPath: published_version = {}".format(published_version))
+        self._app.logger.debug("formatOutputPath: fields[version] = {}".format(fields["version"]))
+
+        if published_version:       # i.e. we have a published version of the published entity on shotgun
+            return publishPath, published_version   # we use the version published on shotgun as the base.
+        else:                       # else we look for paths on local to help format a path as per template
+            return publishPath, fields["version"]  # and version used to create the file path
+
+    def get_published_version(self, path, publish_type=None, increment=True):
+        filters = []
+        # check if we have required context to work with
+        if not self._context.entity:
+            error_msg = 'No linked Shot/Asset found with current context: %r' % self._context
+            self._app.logger.error(error_msg)
+            raise EnvironmentError(error_msg)
+        else:
+            filters.append(
+                ['entity', 'is', self._context.entity]
+            )
+        if not self._context.project:
+            error_msg = 'No linked Project found with current context: %r' % self._context
+            self._app.logger.error(error_msg)
+            raise EnvironmentError(error_msg)
+        else:
+            filters.append(
+                ['project', 'is', self._context.project]
+            )
+        publish_type = self.publish_type
+        # publisher = self.parent
+        publisher = self._currentEngine.apps.get("tk-multi-publish2")
+        # ensure we have the publisher instance.
+        if not publisher:
+            raise Exception("The publisher is not configured for this context.")
+        path_info = publisher.util.get_file_path_components(path)
+        filename = path_info['filename']
+        VERSION_REGEX = r'v\s*([\d]+)'
+        # VERSION_REGEX = r'v(\d)+'
+        version_pattern_match = re.search(VERSION_REGEX, os.path.basename(filename))
+        if not version_pattern_match:
+            error_msg = "Not able to detect version from given path: %s" % filename
+            raise ValueError(error_msg)
+        # found a version number, use the other groups to remove it
+        prefix = version_pattern_match.group(1)
+        # extension = version_pattern_match.group(4) or ""
+        extension = filename.rsplit('.', 1)[1]
+        self._app.logger.debug("get_playblast_ver: extension = {0}, prefix = {1}".format(extension, prefix))
+        # build filters now
+        filters.append(
+            ['code', 'starts_with', prefix],
+        )
+
+        # code: published file name (no ext/ver)
+        # ext: version for ext
+        if extension:
+            filters.append(['code', 'ends_with', extension])
+        if publish_type:
+            filters.append(
+                ['published_file_type.PublishedFileType.code', 'is', publish_type]
+            )
+
+        self._app.logger.debug("get_playblast_ver: filters = {}".format(filters))
+
+        # Run a Shotgun API query to summarize the maximum version number on PublishedFiles that
+        # are linked to the task and match the provided name.
+        # Since PublishedFiles generated by the Publish app have the extension on the end of the name we need to add the
+        # extension in our filter.
+
+        r = self._currentEngine.shotgun.summarize(entity_type="PublishedFile",
+                                                  filters=filters,
+                                                  # [["task", "is", {"type": "Task", "id": self._context.task["id"]}],
+                                                  #     ["name", "is", fields["name"] + ".avi"]],
+                                                  summary_fields=[{"field": "version_number", "type": "maximum"}])
+        # TODO: check max of published and path versions
+        publish_version = r["summaries"]["version_number"] + 1
+        self._app.logger.debug("get_published_version: publish_version = {}".format(publish_version))
+
+        return publish_version
 
     def get_next_version_number(self, template, fields):
         """
@@ -248,7 +330,6 @@ class PlayblastManager(object):
         :param fields:
         :return:
         """
-
         skip_fields = ["version"]
         self._app.logger.debug("get_next_version_number: fields = ", fields)
 
@@ -263,7 +344,10 @@ class PlayblastManager(object):
             path_fields = template.get_fields(a_file)
             versions.append(path_fields["version"])
 
-        return max(versions) + 1
+        if versions:
+            return max(versions) + 1
+        else:
+            return 1
 
     def get_plate_name_from_entity(self, entity):
         """Parses plate's PublishedFile entity and returns plate name
@@ -272,7 +356,7 @@ class PlayblastManager(object):
         Returns:
             str: plate name
         """
-        pattern = re.compile(('\S+\w+'))
+        pattern = re.compile('\S+\w+')
 
         description = entity.get('description') or ''
         description = description.split('\n')[-1]
@@ -314,11 +398,25 @@ class PlayblastManager(object):
         :return:
         """
         # register new Version entity in shotgun or update existing version
-
-        # Run a Shotgun API query to summarize the maximum version number on PublishedFiles that
-        # are linked to the task and match the provided name.
-        # Since PublishedFiles generated by the Publish app have the extension on the end of the name we need to add the
-        # extension in our filter.
+        self._app.logger.debug('Creating Version entity:')
+        playblast_version_entity = self._context.sgtk.shotgun.create(
+            'Version',
+            {
+                'code': publish_name,
+                # 'code': os.path.splitext(os.path.basename(movie_path))[0],
+                'entity': self._context.entity,
+                'project': self._context.project,
+                'user': self._context.user,
+                'description': 'Version creation from playblast tool',
+                'sg_path_to_movie': self.playblastPath,
+                # 'sg_path_to_frames': str(published_plate),
+                'sg_version_type': 'Artist Version',
+            }
+        )
+        self._context.sgtk.shotgun.upload(
+            'Version', playblast_version_entity['id'], self.playblastPath, 'sg_uploaded_movie'
+        )
+        self._app.logger.debug('version_entity: {}', playblast_version_entity)
 
         # todo: version update and use publishPath (check fields first)
         sgtk.util.register_publish(
@@ -328,8 +426,9 @@ class PlayblastManager(object):
                                     publish_name,
                                     version_number,
                                     comment='test playblast publish try 1',
-                                    published_file_type=self.publish_type
-                                )
+                                    published_file_type=self.publish_type,
+                                    version_entity=playblast_version_entity
+                                    )
 
         self._app.log_info("Playblast uploaded to shotgun")
 
