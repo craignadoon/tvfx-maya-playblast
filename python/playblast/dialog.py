@@ -102,11 +102,18 @@ class AppDialog(QtGui.QWidget):
             self.ui.cb_format.setCurrentText(self.ui.cb_format.keys().index('avi'))
             # self.ui.cb_encoding.setCurrentText(self.ui.cb_encoding.keys().index('None'))
 
-            # comment
-            self.ui.textEdit_comment.setText(str("playblast for {will shot give context}"))
-
+            # description
+            comment_entity, comment_project = self.pbMngr.getContext()
+            # self.ui.textEdit_comment.setText("playblast for {0}, {1}".format(comment_entity, comment_project))
+            self.ui.textEdit_comment.setPlainText("playblast for {0}, {1}".format(comment_entity, comment_project))
+            self._app.logger.debug("setDefaultUiData: playblast for {0}, {1}".format(comment_entity, comment_project))
             # pass type
-            self.ui.cb_passType.setCurrentText(self.ui.cb_passType.keys().index('Greyshade'))
+            self.ui.cb_passType.setCurrentText(self.ui.cb_passType.keys().index('smoothShaded'))
+            self.pbMngr.set_pass_type(str(self.ui.cb_passType.currentText()))
+            # camera type
+            self.ui.cb_cameraType.setCurrentText(self.ui.cb_cameraType.keys().index('perspective'))
+            self.pbMngr.set_camera_type(str(self.ui.cb_cameraType.currentText()))
+
         except:
             self._app.logger.debug("Could not set the ui defaults -_-")
 
@@ -146,9 +153,17 @@ class AppDialog(QtGui.QWidget):
             'filename': self.pbMngr.get_temp_output('.avi')  # self.pbMngr.formatOutputPath(),
             # 'compression': encoding
         }
-        self.pbMngr.pass_type = str(self.ui.cb_passType.currentText())
+        self.pbMngr.set_pass_type(str(self.ui.cb_passType.currentText()))
+        self.pbMngr.set_description(str(self.ui.textEdit_comment.toPlainText()))
+        self.pbMngr.set_camera_type(str(self.ui.cb_cameraType.currentText()))
+
         self._app.logger.debug("playblastParams gathered: ")
         self._app.logger.debug(playblastParams)
+
+        self._app.logger.debug("cb_passType.currentText= {}".format(str(self.ui.cb_passType.currentText())))
+        self._app.logger.debug("textEdit_comment= {}".format(str(self.ui.textEdit_comment.toPlainText())))
+        self._app.logger.debug("cb_cameraType.currentText= {}".format(str(self.ui.cb_cameraType.currentText())))
+
         # self._app.logger.debug("playblastParams['filename'] = {} ".format(playblastParams['filename']))
         pprint.pprint(playblastParams)
         return playblastParams

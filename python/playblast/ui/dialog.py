@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\work\TrackVFX\tk\tvfx-maya-playblast\resources\dialog.ui'
 #
-# Created: Mon Apr 19 09:56:21 2021
+# Created: Mon Apr 19 16:09:05 2021
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -53,12 +53,19 @@ class Ui_Dialog(object):
         self.gridLayout_2.addWidget(self.label_5_cameraType, 1, 0, 1, 1)
         self.cb_cameraType = QtGui.QComboBox(self.groupBox_2)
         self.cb_cameraType.setObjectName("cb_cameraType")
+        self.cb_cameraType.addItem("")
+        self.cb_cameraType.addItem("")
+        self.cb_cameraType.addItem("")
+        self.cb_cameraType.addItem("")
+        self.cb_cameraType.addItem("")
         self.gridLayout_2.addWidget(self.cb_cameraType, 1, 1, 1, 1)
         self.label_4_passType = QtGui.QLabel(self.groupBox_2)
         self.label_4_passType.setObjectName("label_4_passType")
         self.gridLayout_2.addWidget(self.label_4_passType, 2, 0, 1, 1)
         self.cb_passType = QtGui.QComboBox(self.groupBox_2)
         self.cb_passType.setObjectName("cb_passType")
+        self.cb_passType.addItem("")
+        self.cb_passType.addItem("")
         self.cb_passType.addItem("")
         self.cb_passType.addItem("")
         self.cb_passType.addItem("")
@@ -136,10 +143,17 @@ class Ui_Dialog(object):
         self.createPlayblast.setText(QtGui.QApplication.translate("Dialog", "Playblast!", None, QtGui.QApplication.UnicodeUTF8))
         self.label_6_focalLength.setText(QtGui.QApplication.translate("Dialog", "Focal length", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5_cameraType.setText(QtGui.QApplication.translate("Dialog", "Camera Type", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_cameraType.setItemText(0, QtGui.QApplication.translate("Dialog", "perspective", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_cameraType.setItemText(1, QtGui.QApplication.translate("Dialog", "top", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_cameraType.setItemText(2, QtGui.QApplication.translate("Dialog", "front", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_cameraType.setItemText(3, QtGui.QApplication.translate("Dialog", "bottom", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_cameraType.setItemText(4, QtGui.QApplication.translate("Dialog", "custom", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4_passType.setText(QtGui.QApplication.translate("Dialog", "Pass Type", None, QtGui.QApplication.UnicodeUTF8))
-        self.cb_passType.setItemText(0, QtGui.QApplication.translate("Dialog", "greyshade", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_passType.setItemText(0, QtGui.QApplication.translate("Dialog", "smoothShaded", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_passType.setItemText(1, QtGui.QApplication.translate("Dialog", "wireframe", None, QtGui.QApplication.UnicodeUTF8))
-        self.cb_passType.setItemText(2, QtGui.QApplication.translate("Dialog", "Custom", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_passType.setItemText(2, QtGui.QApplication.translate("Dialog", "flatShaded", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_passType.setItemText(3, QtGui.QApplication.translate("Dialog", "boundingBox", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_passType.setItemText(4, QtGui.QApplication.translate("Dialog", "points", None, QtGui.QApplication.UnicodeUTF8))
         self.checkBox.setText(QtGui.QApplication.translate("Dialog", "Off Screen", None, QtGui.QApplication.UnicodeUTF8))
         self.label_scale.setText(QtGui.QApplication.translate("Dialog", "Scale", None, QtGui.QApplication.UnicodeUTF8))
         self.label_format.setText(QtGui.QApplication.translate("Dialog", "Format", None, QtGui.QApplication.UnicodeUTF8))

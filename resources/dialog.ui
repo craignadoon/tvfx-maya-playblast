@@ -88,7 +88,33 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QComboBox" name="cb_cameraType"/>
+       <widget class="QComboBox" name="cb_cameraType">
+        <item>
+         <property name="text">
+          <string>perspective</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>top</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>front</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>bottom</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>custom</string>
+         </property>
+        </item>
+       </widget>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_4_passType">
@@ -101,7 +127,7 @@
        <widget class="QComboBox" name="cb_passType">
         <item>
          <property name="text">
-          <string>greyshade</string>
+          <string>smoothShaded</string>
          </property>
         </item>
         <item>
@@ -111,7 +137,17 @@
         </item>
         <item>
          <property name="text">
-          <string>Custom</string>
+          <string>flatShaded</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>boundingBox</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>points</string>
          </property>
         </item>
        </widget>
