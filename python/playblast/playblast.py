@@ -38,7 +38,7 @@ class PlayblastManager(object):
         # self._context = currentEngine.context
         if self._context is None:
             self._context = self._currentEngine.context
-                # self.getContext()
+                # self.get_context()
 
         self._app.logger.info("Playblast self._context = {}".format(self._context))
 
@@ -63,7 +63,7 @@ class PlayblastManager(object):
                             'forceOverwrite': True,
                             }
 
-    def getContext(self):
+    def get_context(self):
         # currentEngine = sgtk.platform.current_engine()
         # self._app.logger.debug("currentEngine.context.entity = {}".format(currentEngine.context.entity))
         # self._app.logger.debug("currentEngine.context.step = {}".format(currentEngine.context.step))
@@ -118,7 +118,7 @@ class PlayblastManager(object):
 
         self._app.logger.debug("get_temp_output: maya temp output file = {}".format(self.mayaOutputPath))
 
-    def getFrameRange(self):
+    def get_frame_range(self):
         """
         function to get frame range from current maya scene
         :returns:
@@ -127,7 +127,7 @@ class PlayblastManager(object):
         """
         start = int(cmds.playbackOptions(q=True, minTime=True))
         end = int(cmds.playbackOptions(q=True, maxTime=True))
-        self._app.logger.debug("getfFrameRange(): start, end frame = {0}, {1}".format(start, end))
+        self._app.logger.debug("get_frame_range(): start, end frame = {0}, {1}".format(start, end))
 
         return start, end
 
@@ -162,7 +162,7 @@ class PlayblastManager(object):
             ext = self.mayaOutputPath.rsplit('.', 1)[1]
         else:
             ext = "avi"
-        self.playblastPath, playblast_version = self.formatOutputPath(ext)
+        self.playblastPath, playblast_version = self.format_output_path(ext)
         self._app.logger.debug("formatted playblastPath = {}".format(self.playblastPath))
 
         # # check if any version of the published file exists on shotgun
@@ -174,9 +174,9 @@ class PlayblastManager(object):
             result = shutil.move(self.mayaOutputPath, self.playblastPath)
             self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
 
-        pbname, fileext = os.path.basename(self.playblastPath).split(".")
-        self.uploadToShotgun(publish_name= pbname[:-5],
-                             version_number=playblast_version)
+        pb_name, fileext = os.path.basename(self.playblastPath).split(".")
+        self.upload_to_shotgun(publish_name=pb_name[:-5],
+                               version_number=playblast_version)
 
         return self.playblastPath
 
@@ -198,30 +198,31 @@ class PlayblastManager(object):
         #     return False
         # self._app.logger.debug("get_current_panel: self.camera_type = {}".format(self.camera_type))
         self._app.logger.debug("get_current_panel: self.camera_type = {}".format(self.camera_type))
-        cam_panel = self.getPanelFromCamera(self.camera_type)
+        cam_panel = self.get_panel_from_camera(self.camera_type)
         self._app.logger.debug("get_current_panel: cam_panel = {}".format(cam_panel))
 
         return cam_panel
 
-    def getPanelFromCamera(self, camera_name):
+    def get_panel_from_camera(self, camera_name):
         list_panel = []
-        self._app.logger.debug("getPanelFromCamera: =")
+        self._app.logger.debug("get_panel_from_camera: =")
         self._app.logger.debug(cmds.getPanel(type="modelPanel"))
 
         for panel_name in cmds.getPanel(type="modelPanel"):
             print "panel_name = ", panel_name
             self._app.logger.debug("panel_name: ={0}, camera_name = {1}".format(panel_name, camera_name))
-            self._app.logger.debug("cmds.modelPanel(panel_name, query=True, camera=True): ={}".format(cmds.modelPanel(panel_name, query=True, camera=True)))
+            self._app.logger.debug("cmds.modelPanel(panel_name, query=True, camera=True): ={}".format(
+                cmds.modelPanel(panel_name, query=True, camera=True)))
 
             if cmds.modelPanel(panel_name, query=True, camera=True) == camera_name:
                 self._app.logger.debug("in if condn")
                 list_panel.append(panel_name)
 
-        self._app.logger.debug("getPanelFromCamera: list_panel = {}".format(list_panel))
+        self._app.logger.debug("get_panel_from_camera: list_panel = {}".format(list_panel))
 
         return list_panel
 
-    def formatOutputPath(self, ext):
+    def format_output_path(self, ext):
         """
         function to format output file path as per template.
             maya_playblast_publish_image
@@ -262,7 +263,7 @@ class PlayblastManager(object):
         # ext = (os.path.splitext(self.mayaOutputPath)[1]).split('.')[1]
         fields["ext"] = ext
         fields["publish_type"] = self.publish_type
-        fields["plate_name"] = self.getPlateName()
+        fields["plate_name"] = self.get_plate_name()
         fields["height"] = int(self.playblastParams['height'])
         fields["width"] = int(self.playblastParams['width'])
         fields["version"] = self.get_next_version_number(template, fields)
@@ -271,7 +272,7 @@ class PlayblastManager(object):
         print ("field values assigned", fields)
 
         self._app.logger.debug("fields assigned: {}".format(fields))
-        fields.keys()
+        # fields.keys()
         publishPath = template.apply_fields(fields)
         self._app.logger.debug("get_playblast_ver(): 1) publishPath: {}".format(publishPath))
 
@@ -301,11 +302,13 @@ class PlayblastManager(object):
         # compare publish version with the version from path
         published_version = self.get_published_version(publishPath, self.publish_type)
 
-        self._app.logger.debug("formatOutputPath: published_version = {}".format(published_version))
-        self._app.logger.debug("formatOutputPath: fields[version] = {}".format(fields["version"]))
+        self._app.logger.debug("format_output_path: published_version = {}".format(published_version))
+        self._app.logger.debug("format_output_path: fields[version] = {}".format(fields["version"]))
 
-        if published_version:       # i.e. we have a published version of the published entity on shotgun
-            return publishPath, published_version   # we use the version published on shotgun as the base.
+        if published_version: # i.e. if we have a published version of the published entity on shotgun
+            fields["version"] = published_version
+            publishPath = template.apply_fields(fields)
+            return publishPath, published_version   # we use the vget_published_version: latest_versionersion published on shotgun as the base.
         else:                       # else we look for paths on local to help format a path as per template
             return publishPath, fields["version"]  # and version used to create the file path
 
@@ -336,20 +339,25 @@ class PlayblastManager(object):
             raise Exception("The publisher is not configured for this context.")
         path_info = publisher.util.get_file_path_components(path)
         filename = path_info['filename']
-        VERSION_REGEX = r'v\s*([\d]+)'
-        # VERSION_REGEX = r'v(\d)+'
+        # VERSION_REGEX = r'v\s*([\d]+)'
+        VERSION_REGEX = r'v(\d)+'
         version_pattern_match = re.search(VERSION_REGEX, os.path.basename(filename))
         if not version_pattern_match:
             error_msg = "Not able to detect version from given path: %s" % filename
             raise ValueError(error_msg)
         # found a version number, use the other groups to remove it
+        x = version_pattern_match.group(0)
         prefix = version_pattern_match.group(1)
         # extension = version_pattern_match.group(4) or ""
-        extension = filename.rsplit('.', 1)[1]
-        self._app.logger.debug("get_playblast_ver: extension = {0}, prefix = {1}".format(extension, prefix))
+        name, extension = filename.rsplit('.')
+        self._app.logger.debug("get_playblast_ver: extension = {0}, prefix = {1}, x ={2} ".format(extension, prefix, x))
+        self._app.logger.debug("filename = {0}, name = {1}".format(filename, name[:-5]))
         # build filters now
+        # filters.append(
+        #     ['code', 'starts_with', prefix],
+        # )
         filters.append(
-            ['code', 'starts_with', prefix],
+            ['code', 'starts_with', name[:-5]],
         )
 
         # code: published file name (no ext/ver)
@@ -368,16 +376,33 @@ class PlayblastManager(object):
         # Since PublishedFiles generated by the Publish app have the extension on the end of the name we need to add the
         # extension in our filter.
 
-        r = self._currentEngine.shotgun.summarize(entity_type="PublishedFile",
-                                                  filters=filters,
-                                                  # [["task", "is", {"type": "Task", "id": self._context.task["id"]}],
-                                                  #     ["name", "is", fields["name"] + ".avi"]],
-                                                  summary_fields=[{"field": "version_number", "type": "maximum"}])
-        # TODO: check max of published and path versions
-        publish_version = r["summaries"]["version_number"] + 1
-        self._app.logger.debug("get_published_version: publish_version = {}".format(publish_version))
+        # r = self._currentEngine.shotgun.summarize(entity_type="PublishedFile",
+        #                                           filters=filters,
+        #                                           # [["task", "is", {"type": "Task", "id": self._context.task["id"]}],
+        #                                           #     ["name", "is", fields["name"] + ".avi"]],
+        #                                           summary_fields=[{"field": "version_number", "type": "maximum"}])
+        # publish_version = r["summaries"]["version_number"] + 1
 
-        return publish_version
+        available_records = publisher.sgtk.shotgun.find_one(
+            entity_type='PublishedFile',
+            filters=filters,
+            fields=['version_number'],
+            order=[{'field_name': 'version_number', 'direction': 'desc'}]
+        )
+        self._app.logger.debug("available_records = {}".format(available_records))
+        if available_records:
+            latest_version = available_records['version_number']
+        else:
+            latest_version = 0
+        if increment:
+            latest_version += 1
+
+        self._app.logger.debug("get_published_version: latest_version = {}".format(latest_version))
+
+        return latest_version
+        # TODO: check max of published and path versions
+
+        # return publish_version
 
     def get_next_version_number(self, template, fields):
         """
@@ -422,7 +447,7 @@ class PlayblastManager(object):
             return details[1]
         return ''
 
-    def getPlateName(self):
+    def get_plate_name(self):
         """Returns plate names associated with the context
             Args:
                 context: sgtk.Context, *Optional* if not provided
@@ -449,7 +474,7 @@ class PlayblastManager(object):
         self._app.logger.debug("plate_names = {}".format(plate_names))
         return plate_names[0]
 
-    def uploadToShotgun(self, publish_name, version_number):
+    def upload_to_shotgun(self, publish_name, version_number):
         """
         To upload the playblast img seq/movie to shotgun
         :return:
