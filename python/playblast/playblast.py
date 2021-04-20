@@ -21,8 +21,6 @@ except ImportError:
 
 
 class PlayblastManager(object):
-    __uploadToShotgun = True
-
     """
     Main playblast functionality
     """
@@ -46,6 +44,8 @@ class PlayblastManager(object):
 
         self.publish_type = "Playblast"
         self.pass_type = None
+        self.description = None
+        self.camera_type = None
         # self.mayaOutputPath = self.get_temp_output()
         self.mayaOutputPath = None
         self.playblastPath = None
@@ -74,7 +74,7 @@ class PlayblastManager(object):
         self._app.logger.debug("self._context.entity = {}".format(self._context.entity))
         self._app.logger.debug("self._context.step = {}".format(self._context.step))
         self._app.logger.debug("self._context.task = {}".format(self._context.task))
-        return self._context
+        return self._context.entity, self._context.project
 
         # self._app.logger.debug("tk = {}".format(tk))
         #     self._app = sgtk.platform.current_bundle()
@@ -82,6 +82,18 @@ class PlayblastManager(object):
         #     self._context = self._current_engine.context
         #     self._shotgun = self._current_engine.shotgun
         #     self._toolkit = self._current_engine.sgtk
+
+    def set_pass_type(self, pass_type):
+        self.pass_type = pass_type
+
+    def set_description(self, comment):
+        self.description = comment
+
+    def set_camera_type(self, camera_type):
+        if camera_type == "perspective":
+            self.camera_type = "persp"
+        else:
+            self.camera_type = camera_type
 
     def get_temp_output(self, ext):
         # todo: mktemp
@@ -134,7 +146,11 @@ class PlayblastManager(object):
         self._app.logger.debug(self.playblastParams)
         # if not self.focus:
         #     self.focus = True
-        panel = cmds.getPanel(withFocus=True)
+        panel = self.get_current_panel()
+        self._app.logger.debug("createPlayblast: panel = {}".format(panel))
+        self._app.logger.debug("createPlayblast: self.pass_type = {}".format(self.pass_type))
+
+        # cmds.getPanel(withFocus=True)
         cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
         print "in playblast.py before creating playblast"
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
@@ -163,6 +179,47 @@ class PlayblastManager(object):
                              version_number=playblast_version)
 
         return self.playblastPath
+
+    def get_current_panel(self):
+        # panel = cmds.getPanel(withFocus=True)
+        #
+        # if cmds.getPanel(typeOf=panel) != 'modelPanel':
+        #     # just get the first visible model panel we find, hopefully the correct one.
+        #     for p in cmds.getPanel(visiblePanels=True):
+        #         if cmds.getPanel(typeOf=p) == 'modelPanel':
+        #             panel = p
+        #             cmds.setFocus(panel)
+        #             break
+        #
+        # self._app.logger.debug("get_current_panel: panel = {}".format(panel))
+
+        # if cmds.getPanel(typeOf=panel) != 'modelPanel':
+        #     OpenMaya.MGlobal.displayWarning('Please highlight a camera viewport.')
+        #     return False
+        # self._app.logger.debug("get_current_panel: self.camera_type = {}".format(self.camera_type))
+        self._app.logger.debug("get_current_panel: self.camera_type = {}".format(self.camera_type))
+        cam_panel = self.getPanelFromCamera(self.camera_type)
+        self._app.logger.debug("get_current_panel: cam_panel = {}".format(cam_panel))
+
+        return cam_panel
+
+    def getPanelFromCamera(self, camera_name):
+        list_panel = []
+        self._app.logger.debug("getPanelFromCamera: =")
+        self._app.logger.debug(cmds.getPanel(type="modelPanel"))
+
+        for panel_name in cmds.getPanel(type="modelPanel"):
+            print "panel_name = ", panel_name
+            self._app.logger.debug("panel_name: ={0}, camera_name = {1}".format(panel_name, camera_name))
+            self._app.logger.debug("cmds.modelPanel(panel_name, query=True, camera=True): ={}".format(cmds.modelPanel(panel_name, query=True, camera=True)))
+
+            if cmds.modelPanel(panel_name, query=True, camera=True) == camera_name:
+                self._app.logger.debug("in if condn")
+                list_panel.append(panel_name)
+
+        self._app.logger.debug("getPanelFromCamera: list_panel = {}".format(list_panel))
+
+        return list_panel
 
     def formatOutputPath(self, ext):
         """
@@ -210,7 +267,7 @@ class PlayblastManager(object):
         fields["width"] = int(self.playblastParams['width'])
         fields["version"] = self.get_next_version_number(template, fields)
         # TODO: pass_type: based on what? cam type from ui
-        fields["pass_type"] = 'pass_type'
+        fields["pass_type"] = self.pass_type
         print ("field values assigned", fields)
 
         self._app.logger.debug("fields assigned: {}".format(fields))
@@ -407,7 +464,7 @@ class PlayblastManager(object):
                 'entity': self._context.entity,
                 'project': self._context.project,
                 'user': self._context.user,
-                'description': 'Version creation from playblast tool',
+                'description': self.description,  # 'Version creation from playblast tool',
                 'sg_path_to_movie': self.playblastPath,
                 # 'sg_path_to_frames': str(published_plate),
                 'sg_version_type': 'Artist Version',
@@ -425,7 +482,7 @@ class PlayblastManager(object):
                                     self.playblastPath,
                                     publish_name,
                                     version_number,
-                                    comment='test playblast publish try 1',
+                                    comment=self.description,
                                     published_file_type=self.publish_type,
                                     version_entity=playblast_version_entity
                                     )
