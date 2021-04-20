@@ -20,6 +20,7 @@ from .playblast import PlayblastManager
 
 logger = sgtk.platform.get_logger(__name__)
 
+
 def show_dialog(app_instance, entity_type, entity_ids, version_str='0.0.1'):
     """
     Shows the main dialog window, using the special Shotgun multi-select mode.
@@ -61,8 +62,8 @@ class AppDialog(QtGui.QWidget):
         self.context = None
 
         self.pbMngr = PlayblastManager(self._app,self.context)
-        self.setDefaultUiData()
-        self._app.logger.info("$$$$ setDefaultUiData DONE ")
+        self.set_default_ui_data()
+        self._app.logger.info("$$$$ set_default_ui_data DONE ")
 
         # via the self._app handle we can for example access:
         # - The engine, via self._app.engine
@@ -76,17 +77,18 @@ class AppDialog(QtGui.QWidget):
         # self.ui.context.setText("Current selection type: %s, <br>Currently selected ids: %s" % (entity_type, entity_ids))
         self.ui.createPlayblast.clicked.connect(self.doPlayblast)
 
-    def setDefaultUiData(self):
+    def set_default_ui_data(self):
         """
         method to set defaults in ui to minimize user input.
         :return:
         """
         try:
             # FRAME RANGE: from maya scene
-            startFrame, endFrame = self.pbMngr.getFrameRange()
-            self._app.logger.info("setDefaultUiData: startFrame, endFrame = {0}, {1}".format(startFrame, endFrame))
-            self.ui.frameRange_start.setText(str(startFrame))
-            self.ui.frameRange_end.setText(str(endFrame))
+            start_frame, end_frame = self.pbMngr.get_frame_range()
+            self._app.logger.info("set_default_ui_data: start_frame, end_frame = {0}, {1}".format(start_frame,
+                                                                                                  end_frame))
+            self.ui.frameRange_start.setText(str(start_frame))
+            self.ui.frameRange_end.setText(str(end_frame))
 
             # SCALE:
             self.ui.lineEdit_scale.setText(str('0.50'))
@@ -103,10 +105,10 @@ class AppDialog(QtGui.QWidget):
             # self.ui.cb_encoding.setCurrentText(self.ui.cb_encoding.keys().index('None'))
 
             # description
-            comment_entity, comment_project = self.pbMngr.getContext()
+            comment_entity, comment_project = self.pbMngr.get_context()
             # self.ui.textEdit_comment.setText("playblast for {0}, {1}".format(comment_entity, comment_project))
             self.ui.textEdit_comment.setPlainText("playblast for {0}, {1}".format(comment_entity, comment_project))
-            self._app.logger.debug("setDefaultUiData: playblast for {0}, {1}".format(comment_entity, comment_project))
+            self._app.logger.debug("set_default_ui_data: playblast for {0}, {1}".format(comment_entity, comment_project))
             # pass type
             self.ui.cb_passType.setCurrentText(self.ui.cb_passType.keys().index('smoothShaded'))
             self.pbMngr.set_pass_type(str(self.ui.cb_passType.currentText()))
@@ -150,7 +152,7 @@ class AppDialog(QtGui.QWidget):
             # 'viewer': True,
             'framePadding': int(self.ui.lineEdit_framePadding.text()),
             # 'filename': maya_output,
-            'filename': self.pbMngr.get_temp_output('.avi')  # self.pbMngr.formatOutputPath(),
+            'filename': self.pbMngr.get_temp_output('.avi')  # self.pbMngr.format_output_path(),
             # 'compression': encoding
         }
         self.pbMngr.set_pass_type(str(self.ui.cb_passType.currentText()))
@@ -179,4 +181,4 @@ class AppDialog(QtGui.QWidget):
         playblastFile = self.pbMngr.createPlayblast(overridePlayblastParams)
         self._app.logger.info("Playblast created = {}".format(playblastFile))
 
-        #self.pbMngr.uploadToShotgun(playblastFile)
+        #self.pbMngr.upload_to_shotgun(playblastFile)
