@@ -18,6 +18,7 @@ from .playblast import PlayblastManager
 
 logger = sgtk.platform.get_logger(__name__)
 camera_utils = sgtk.platform.import_framework("tvfx-maya-utils", "camera_utils")
+shotgun_menus = sgtk.platform.import_framework("tk-framework-qtwidgets", "shotgun_menus")
 
 
 def show_dialog(app_instance, entity_type, entity_ids, version_str='0.0.1'):
@@ -62,6 +63,17 @@ class AppDialog(QtGui.QWidget):
 
         self.ui.le_frame_start.setValidator(QtGui.QIntValidator(self))
         self.ui.le_frame_end.setValidator(QtGui.QIntValidator(self))
+
+        # --- add resolution presets
+        res_from_sg = QtGui.QAction("From Shotgun", self)
+        res_from_render_globals = QtGui.QAction("From Render Settings", self)
+        res_from_windows = QtGui.QAction("From Window", self)
+        res_custom = QtGui.QAction("Custom", self)
+        self.res_preset_menu = shotgun_menus.ShotgunMenu(self)
+        self.res_preset_menu.add_group([res_from_sg, res_from_render_globals, res_from_windows, res_custom])
+        self.ui.sb_res_h.setDisabled(True)
+        self.ui.sb_res_w.setDisabled(True)
+        self.ui.tb_resolution_preset.setMenu(self.res_preset_menu)
 
         # most of the useful accessors are available through the Application class instance
         # it is often handy to keep a reference to this. You can get it via the following method:
