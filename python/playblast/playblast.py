@@ -64,26 +64,21 @@ class PlayblastManager(object):
                             }
 
     def get_context(self):
-        # currentEngine = sgtk.platform.current_engine()
-        # self._app.logger.debug("currentEngine.context.entity = {}".format(currentEngine.context.entity))
-        # self._app.logger.debug("currentEngine.context.step = {}".format(currentEngine.context.step))
-        # self._app.logger.debug("currentEngine.context.task = {}".format(currentEngine.context.task))
-        # self._tk = currentEngine.sgtk
-        # self._context = currentEngine.context
-        # return currentEngine.context, currentEngine.sgtk, currentEngine
+        """
+        method to return current app context
+        :return:
+        """
         self._app.logger.debug("self._context.entity = {}".format(self._context.entity))
         self._app.logger.debug("self._context.step = {}".format(self._context.step))
         self._app.logger.debug("self._context.task = {}".format(self._context.task))
-        return self._context.entity, self._context.project
-
-        # self._app.logger.debug("tk = {}".format(tk))
-        #     self._app = sgtk.platform.current_bundle()
-        #     self._current_engine = sgtk.platform.current_engine()
-        #     self._context = self._current_engine.context
-        #     self._shotgun = self._current_engine.shotgun
-        #     self._toolkit = self._current_engine.sgtk
+        return self._context
 
     def set_pass_type(self, pass_type):
+        """
+        method to set pass type as per user input in the ui
+        :param pass_type: string pass type:  smoothShaded, wireframe, flatShaded, bounding box, and points
+        :return:
+        """
         self.pass_type = pass_type
 
     def set_description(self, comment):
@@ -131,16 +126,16 @@ class PlayblastManager(object):
 
         return start, end
 
-    def createPlayblast(self, overridePlayblastParams):
+    def createPlayblast(self, override_playblast_params):
         """
         function to call maya's internal playblast command to create playblast
         as per user input in ui.gatherUiData
         :param
-            overridePlayblastParams (dict): user input from ui
+            override_playblast_params (dict): user input from ui
         :return:
             playblastPath: output playblast file path.
         """
-        self.playblastParams.update(overridePlayblastParams)
+        self.playblastParams.update(override_playblast_params)
         # TODO: filename
         self._app.logger.debug("&&&&& self.playblastParams():")
         self._app.logger.debug(self.playblastParams)
@@ -149,7 +144,6 @@ class PlayblastManager(object):
         panel = self.get_current_panel()
         self._app.logger.debug("createPlayblast: panel = {}".format(panel))
         self._app.logger.debug("createPlayblast: self.pass_type = {}".format(self.pass_type))
-
         # cmds.getPanel(withFocus=True)
         cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
         print "in playblast.py before creating playblast"
@@ -174,13 +168,17 @@ class PlayblastManager(object):
             result = shutil.move(self.mayaOutputPath, self.playblastPath)
             self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
 
-        pb_name, fileext = os.path.basename(self.playblastPath).split(".")
+        pb_name, file_ext = os.path.basename(self.playblastPath).split(".")
         self.upload_to_shotgun(publish_name=pb_name[:-5],
                                version_number=playblast_version)
 
         return self.playblastPath
 
     def get_current_panel(self):
+        """
+        get current panel in focus for maya
+        :return:
+        """
         # panel = cmds.getPanel(withFocus=True)
         #
         # if cmds.getPanel(typeOf=panel) != 'modelPanel':
@@ -204,6 +202,12 @@ class PlayblastManager(object):
         return cam_panel
 
     def get_panel_from_camera(self, camera_name):
+        """
+        To get modal panel wrt the camera.
+        this is to avoid cases when no modal plane is selected
+        :param camera_name: name of the camera
+        :return: panel name
+        """
         list_panel = []
         self._app.logger.debug("get_panel_from_camera: =")
         self._app.logger.debug(cmds.getPanel(type="modelPanel"))
@@ -266,17 +270,22 @@ class PlayblastManager(object):
         fields["plate_name"] = self.get_plate_name()
         fields["height"] = int(self.playblastParams['height'])
         fields["width"] = int(self.playblastParams['width'])
-        fields["version"] = self.get_next_version_number(template, fields)
-        # TODO: pass_type: based on what? cam type from ui
+        fields["version"] = 0
+        # self.get_next_version_number(template, fields)
         fields["pass_type"] = self.pass_type
         print ("field values assigned", fields)
 
         self._app.logger.debug("fields assigned: {}".format(fields))
-        # fields.keys()
         publishPath = template.apply_fields(fields)
         self._app.logger.debug("get_playblast_ver(): 1) publishPath: {}".format(publishPath))
 
+        # fetch latest publish version from shotgun and apply the incremented version to publish path
+        published_version = self.get_published_version(publishPath, self.publish_type)
+        fields["version"] = published_version
+        publishPath = template.apply_fields(fields)
+
         publishPath = "".join(publishPath.split(" "))  # remove whitespaces causing windows os errors
+        # create folders and touch the publish file path
         try:
             self._app.logger.debug("trying sgtk to create the publishPath")
             self._currentEngine.ensure_folder_exists(os.path.dirname(publishPath))
@@ -284,35 +293,35 @@ class PlayblastManager(object):
             self._app.logger.debug("sgtk publishPath touched = {}".format(publishPath))
         except:
             if not os.path.exists(os.path.dirname(publishPath)):
-                self._app.logger.debug("to create publishPath directories using os")
+                self._app.logger.debug("Creating publishPath directories using os module")
                 os.makedirs(os.path.dirname(publishPath))
                 if os.path.isfile(publishPath):
-                    self._app.logger.debug("raw_publishPath exists as {}".format(publishPath))
+                    self._app.logger.debug("publishPath exists as {}".format(publishPath))
                 else:
                     with open(publishPath, 'a'):  # Create file if does not exist
                         os.utime(publishPath, None)
-                #Path(raw_publishPath).touch()  # pathlib2 not loading when in shotgun
-                # except OSError as exc:  # Guard against race condition
-                #     if exc.errno != errno.EEXIST:
-                #         raise
-
-            # with open(raw_publishPath, "w") as f:
-            #     f.write("FOOBAR")
-
-        # compare publish version with the version from path
-        published_version = self.get_published_version(publishPath, self.publish_type)
 
         self._app.logger.debug("format_output_path: published_version = {}".format(published_version))
         self._app.logger.debug("format_output_path: fields[version] = {}".format(fields["version"]))
 
-        if published_version: # i.e. if we have a published version of the published entity on shotgun
-            fields["version"] = published_version
-            publishPath = template.apply_fields(fields)
-            return publishPath, published_version   # we use the vget_published_version: latest_versionersion published on shotgun as the base.
-        else:                       # else we look for paths on local to help format a path as per template
-            return publishPath, fields["version"]  # and version used to create the file path
+        # if published_version: # i.e. if we have a published version of the published entity on shotgun
+        #     fields["version"] = published_version
+        #     publishPath = template.apply_fields(fields)
+        #     return publishPath, published_version   # we use the version published on shotgun as the base.
+        # else:                       # else we look for paths on local to help format a path as per template
+        #
+        return publishPath, fields["version"]  # and version used to create the file path
 
     def get_published_version(self, path, publish_type=None, increment=True):
+        """
+        checks for existing versions of playblast path on shotgun and increments the value by 1,
+        if there is a match on shotgun for the given context and fields.
+        returns the new playblast version after
+        :param path :           path to the playblast output formatted as per template
+        :param publish_type :   type of published file. In our case, "Playblast"
+        :param increment :      bool to decide if we increment the version number or not.Yes in our case
+        :return:                version of the new published playblast file
+        """
         filters = []
         # check if we have required context to work with
         if not self._context.entity:
@@ -332,38 +341,36 @@ class PlayblastManager(object):
                 ['project', 'is', self._context.project]
             )
         publish_type = self.publish_type
-        # publisher = self.parent
         publisher = self._currentEngine.apps.get("tk-multi-publish2")
         # ensure we have the publisher instance.
         if not publisher:
             raise Exception("The publisher is not configured for this context.")
         path_info = publisher.util.get_file_path_components(path)
         filename = path_info['filename']
-        # VERSION_REGEX = r'v\s*([\d]+)'
-        VERSION_REGEX = r'v(\d)+'
-        version_pattern_match = re.search(VERSION_REGEX, os.path.basename(filename))
-        if not version_pattern_match:
-            error_msg = "Not able to detect version from given path: %s" % filename
-            raise ValueError(error_msg)
-        # found a version number, use the other groups to remove it
-        x = version_pattern_match.group(0)
-        prefix = version_pattern_match.group(1)
+        # # VERSION_REGEX = r'v\s*([\d]+)'
+        # VERSION_REGEX = r'v(\d)+'
+        # version_pattern_match = re.search(VERSION_REGEX, os.path.basename(filename))
+        # if not version_pattern_match:
+        #     error_msg = "Not able to detect version from given path: %s" % filename
+        #     raise ValueError(error_msg)
+        # # found a version number, use the other groups to remove it
+        # x = version_pattern_match.group(0)
+        # prefix = version_pattern_match.group(1)
         # extension = version_pattern_match.group(4) or ""
+        # TODO:replace string manipulations with a regex to extract filename without version and extension
         name, extension = filename.rsplit('.')
-        self._app.logger.debug("get_playblast_ver: extension = {0}, prefix = {1}, x ={2} ".format(extension, prefix, x))
+        # self._app.logger.debug("get_playblast_ver:extension={0}, prefix = {1}, x ={2} ".format(extension, prefix, x))
         self._app.logger.debug("filename = {0}, name = {1}".format(filename, name[:-5]))
+
         # build filters now
-        # filters.append(
-        #     ['code', 'starts_with', prefix],
-        # )
+        # code: published file name (no ext/ver)
         filters.append(
             ['code', 'starts_with', name[:-5]],
         )
-
-        # code: published file name (no ext/ver)
         # ext: version for ext
         if extension:
             filters.append(['code', 'ends_with', extension])
+        # publish_type: Playblast publish type
         if publish_type:
             filters.append(
                 ['published_file_type.PublishedFileType.code', 'is', publish_type]
@@ -398,11 +405,7 @@ class PlayblastManager(object):
             latest_version += 1
 
         self._app.logger.debug("get_published_version: latest_version = {}".format(latest_version))
-
         return latest_version
-        # TODO: check max of published and path versions
-
-        # return publish_version
 
     def get_next_version_number(self, template, fields):
         """
@@ -477,6 +480,7 @@ class PlayblastManager(object):
     def upload_to_shotgun(self, publish_name, version_number):
         """
         To upload the playblast img seq/movie to shotgun
+
         :return:
         """
         # register new Version entity in shotgun or update existing version
