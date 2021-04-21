@@ -31,3 +31,4 @@ requires_engine_version:
 
 # the frameworks required to run this playblast
 frameworks:
+  - {"name": "tvfx-maya-utils", "version": "v0.x.x"}
