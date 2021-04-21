@@ -137,8 +137,6 @@ class AppDialog(QtGui.QWidget):
             self._app.logger.debug(
                 "set_default_ui_data: playblast for {0}, {1}".format(context.entity, context.project))
 
-            self.ui.le_comments.setText(','.join(camera_utils.get_camera_pattern()))
-
         except Exception as err:
             print(traceback.format_exc())
             self._app.logger.debug("Could not set the ui defaults: {}".format(err))
@@ -183,7 +181,10 @@ class AppDialog(QtGui.QWidget):
         }
         self.pbMngr.set_pass_type(self.pass_type)
         self.pbMngr.set_camera_type(self.camera_type)
-        self.pbMngr.set_description(str(self.ui.le_comments.text()))
+        description = 'FocalLength: {}mm, PassType: {}, CameraType: {}, Comments: {}'.format(
+            self.ui.sb_focal.value(), self.pass_type, self.camera_type, self.ui.le_comments.text()
+        )
+        self.pbMngr.set_description(description)
 
         self._app.logger.debug("playblastParams gathered: ")
         self._app.logger.debug(playblastParams)
