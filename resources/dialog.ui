@@ -6,14 +6,17 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>402</width>
-    <height>353</height>
+    <width>497</width>
+    <height>406</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>The Current Sgtk Environment</string>
   </property>
   <layout class="QFormLayout" name="formLayout_3">
+   <property name="fieldGrowthPolicy">
+    <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+   </property>
    <item row="1" column="0" colspan="2">
     <widget class="QFrame" name="frame">
      <property name="frameShape">
@@ -176,6 +179,25 @@
       <item row="0" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
+         <widget class="QComboBox" name="cb_resolution">
+          <item>
+           <property name="text">
+            <string>From Viewport</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>From Render Settings</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Custom</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item>
          <widget class="QSpinBox" name="sb_res_w">
           <property name="maximum">
            <number>20000</number>
@@ -214,6 +236,43 @@
         </item>
         <item>
          <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_6_focalLength">
+        <property name="text">
+         <string>Focal length</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <item>
+         <widget class="QDoubleSpinBox" name="sb_focal">
+          <property name="prefix">
+           <string/>
+          </property>
+          <property name="suffix">
+           <string> mm</string>
+          </property>
+          <property name="value">
+           <double>35.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_6">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -303,37 +362,6 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_format">
-        <property name="text">
-         <string>Format</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_framePadding">
-        <property name="text">
-         <string>FramePadding</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="1">
-       <widget class="QCheckBox" name="checkBox">
-        <property name="text">
-         <string>Yes/No?</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Off Screen</string>
-        </property>
-       </widget>
-      </item>
       <item row="3" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
@@ -363,6 +391,13 @@
          </spacer>
         </item>
        </layout>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_format">
+        <property name="text">
+         <string>Format</string>
+        </property>
+       </widget>
       </item>
       <item row="4" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -395,6 +430,13 @@
         </item>
        </layout>
       </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_framePadding">
+        <property name="text">
+         <string>FramePadding</string>
+        </property>
+       </widget>
+      </item>
       <item row="5" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout_5">
         <item>
@@ -419,64 +461,28 @@
         </item>
        </layout>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_6_focalLength">
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>Focal length</string>
+         <string>Off Screen</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_6">
-        <item>
-         <widget class="QDoubleSpinBox" name="sb_focal">
-          <property name="prefix">
-           <string/>
-          </property>
-          <property name="suffix">
-           <string> mm</string>
-          </property>
-          <property name="value">
-           <double>35.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_6">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
+      <item row="6" column="1">
+       <widget class="QCheckBox" name="checkBox">
+        <property name="text">
+         <string>Yes/No?</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
    </item>
   </layout>
-  <zorder>label_comment</zorder>
   <zorder>groupBox_3</zorder>
-  <zorder>createPlayblast</zorder>
-  <zorder>label_6_focalLength</zorder>
-  <zorder>sb_scale</zorder>
-  <zorder>horizontalSpacer_2</zorder>
-  <zorder>cb_format</zorder>
-  <zorder>horizontalSpacer_3</zorder>
-  <zorder>sb_padding</zorder>
-  <zorder>horizontalSpacer_4</zorder>
-  <zorder>horizontalSpacer_6</zorder>
-  <zorder>sb_focal</zorder>
-  <zorder>cb_pass_type</zorder>
-  <zorder>label_5_cameraType</zorder>
-  <zorder>label_4_passType</zorder>
-  <zorder>cb_camera_type</zorder>
-  <zorder>pb_cancel</zorder>
   <zorder>frame</zorder>
  </widget>
  <resources>

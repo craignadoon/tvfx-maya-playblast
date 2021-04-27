@@ -55,6 +55,7 @@ class AppDialog(QtGui.QWidget):
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
+        self.ui.cb_resolution.currentTextChanged.connect(self._toggle_custom_res_type)
         self.ui.cb_pass_type.currentTextChanged.connect(self._toggle_custom_pass_type)
         self.ui.cb_camera_type.currentTextChanged.connect(self._toggle_custom_camera_type)
         self.ui.pb_cancel.released.connect(self.deleteLater)
@@ -74,14 +75,15 @@ class AppDialog(QtGui.QWidget):
         self.ui.sb_res_h.setDisabled(True)
         self.ui.sb_res_w.setDisabled(True)
         self.ui.tb_resolution_preset.setMenu(self.res_preset_menu)
-
+        self.ui.tb_resolution_preset.setDisabled(True)
+        # self.ui.cb_resolution.
         # most of the useful accessors are available through the Application class instance
         # it is often handy to keep a reference to this. You can get it via the following method:
         self._app = sgtk.platform.current_bundle()
         self._app.logger.debug("$$$$ self._app = {}".format(self._app))
         self.context = None
 
-        self.pbMngr = PlayblastManager(self._app,self.context)
+        self.pbMngr = PlayblastManager(self._app, self.context)
         self.set_default_ui_data()
         self._app.logger.info("$$$$ set_default_ui_data DONE ")
 
@@ -97,6 +99,14 @@ class AppDialog(QtGui.QWidget):
         # self.ui.context.setText("Current selection type: %s, <br>Currently selected ids: %s" % (entity_type, entity_ids))
         self.ui.createPlayblast.clicked.connect(self.do_playblast)
 
+    def _toggle_custom_res_type(self, val):
+        if val == 'Custom':
+            self.ui.sb_res_w.setEnabled(True)
+            self.ui.sb_res_h.setEnabled(True)
+        else:
+            self.ui.sb_res_w.setVisible(False)
+            self.ui.sb_res_h.setVisible(False)
+
     def _toggle_custom_pass_type(self, val):
         if val == 'Custom':
             self.ui.le_pass_type_custom.setVisible(True)
@@ -108,6 +118,30 @@ class AppDialog(QtGui.QWidget):
             self.ui.le_camera_custom.setVisible(True)
         else:
             self.ui.le_camera_custom.setVisible(False)
+
+    # def _get_maya_window_resolution():
+    #     maya.cmds.currentTime(maya.cmds.currentTime(query=True))
+    #     panel = maya.cmds.playblast(activeEditor=True)
+    #     panel_name = panel.split("|")[-1]
+    #     width = maya.cmds.control(panel_name, query=True, width=True)
+    #     height = maya.cmds.control(panel_name, query=True, height=True)
+    #     return width, height
+    #
+    # def _get_maya_render_resolution():
+    #     width = maya.cmds.getAttr('defaultResolution.width')
+    #     height = maya.cmds.getAttr('defaultResolution.height')
+    #     return width, height
+
+    def get_res(self):
+        if self.ui.cb_resolution == "From Viewport":
+            w, h = self.pbMngr.get_maya_window_resolution()
+        elif self.ui.cb_resolution == "From Render Settings":
+            w, h = self.pbMngr.get_maya_window_resolution()
+        else:
+            w = self.ui.sb_res_w.value()
+            h = self.ui.sb_res_h.value()
+
+        return w, h
 
     def set_default_ui_data(self):
         """
@@ -130,6 +164,7 @@ class AppDialog(QtGui.QWidget):
             self.ui.sb_focal.setValue(35)
 
             # RESOLUTION : (hard coding for now)
+
             self.ui.sb_res_w.setValue(960)
             self.ui.sb_res_h.setValue(540)
 
@@ -155,17 +190,17 @@ class AppDialog(QtGui.QWidget):
 
     @property
     def camera_type(self):
-        camera_type = self.cb_camera_type.currentText()
+        camera_type = self.ui.cb_camera_type.currentText()
         if camera_type == "Custom":
-            camera_type = self.le_camera_custom.text()
+            camera_type = self.ui.le_camera_custom.text()
 
         return camera_type
 
     @property
     def pass_type(self):
-        pass_type = self.cb_pass_type.currentText()
+        pass_type = self.ui.cb_pass_type.currentText()
         if pass_type == 'Custom':
-            pass_type = self.le_pass_type_custom.text()
+            pass_type = self.ui.le_pass_type_custom.text()
 
         return pass_type
 
@@ -174,6 +209,8 @@ class AppDialog(QtGui.QWidget):
         method to gather ui data.
         :return:
         """
+        width, height = self.get_res()
+
         playblastParams = {
             'startTime': int(self.ui.le_frame_start.text()),
             'endTime': int(self.ui.le_frame_end.text()),
@@ -181,8 +218,11 @@ class AppDialog(QtGui.QWidget):
             'format': str(self.ui.cb_format.currentText()),
             'percent': float(self.ui.sb_scale.value()) * 100,
             # 'compression': 'H.264',
-            'width': int(float(self.ui.sb_res_w.value())),
-            'height': int(float(self.ui.sb_res_h.value())),
+            # 'width': int(float(self.ui.sb_res_w.value())),
+            # 'height': int(float(self.ui.sb_res_h.value())),
+            'width': width,
+            'height': height,
+
             'offScreen': True,
             # 'quality': 70,
             # 'viewer': True,

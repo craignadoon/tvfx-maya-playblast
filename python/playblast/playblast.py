@@ -145,7 +145,7 @@ class PlayblastManager(object):
         self._app.logger.debug("createPlayblast: panel = {}".format(panel))
         self._app.logger.debug("createPlayblast: self.pass_type = {}".format(self.pass_type))
         # cmds.getPanel(withFocus=True)
-        cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
+        # cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
         print "in playblast.py before creating playblast"
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
         self._app.logger.debug("createPlayblast: mayaOutputPath = {}".format(self.mayaOutputPath))
@@ -225,6 +225,19 @@ class PlayblastManager(object):
         self._app.logger.debug("get_panel_from_camera: list_panel = {}".format(list_panel))
 
         return list_panel
+
+    def get_maya_window_resolution(self):
+        cmds.currentTime(cmds.currentTime(query=True))
+        panel = cmds.playblast(activeEditor=True)
+        panel_name = panel.split("|")[-1]
+        width = cmds.control(panel_name, query=True, width=True)
+        height = cmds.control(panel_name, query=True, height=True)
+        return width, height
+
+    def get_maya_render_resolution(self):
+        width = cmds.getAttr('defaultResolution.width')
+        height = cmds.getAttr('defaultResolution.height')
+        return width, height
 
     def format_output_path(self, ext):
         """
