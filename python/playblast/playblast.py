@@ -156,9 +156,9 @@ class PlayblastManager(object):
             result = shutil.copy(self.mayaOutputPath, self.playblastPath)
             self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
 
-        pb_name, file_ext = os.path.basename(self.playblastPath).split(".")
-        version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
-                                                version_number=playblast_version)
+        pb_name, padding, file_ext = os.path.basename(self.playblastPath).split(".")
+        self.upload_to_shotgun(publish_name=pb_name[:-5],
+                               version_number=playblast_version)
 
         return self.playblastPath, version_entity
 
@@ -197,14 +197,14 @@ class PlayblastManager(object):
         :return: panel name
         """
         list_panel = []
-        self._app.logger.debug("get_panel_from_camera: =")
-        self._app.logger.debug(cmds.getPanel(type="modelPanel"))
+        # self._app.logger.debug("get_panel_from_camera: =")
+        # self._app.logger.debug(cmds.getPanel(type="modelPanel"))
 
         for panel_name in cmds.getPanel(type="modelPanel"):
-            print("panel_name = ", panel_name)
-            self._app.logger.debug("panel_name: ={0}, camera_name = {1}".format(panel_name, camera_name))
-            self._app.logger.debug("cmds.modelPanel(panel_name, query=True, camera=True): ={}".format(
-                cmds.modelPanel(panel_name, query=True, camera=True)))
+            print "panel_name = ", panel_name
+            # self._app.logger.debug("panel_name: ={0}, camera_name = {1}".format(panel_name, camera_name))
+            # self._app.logger.debug("cmds.modelPanel(panel_name, query=True, camera=True): ={}".format(
+            #     cmds.modelPanel(panel_name, query=True, camera=True)))
 
             if cmds.modelPanel(panel_name, query=True, camera=True) == camera_name:
                 self._app.logger.debug("in if condn")
@@ -359,7 +359,8 @@ class PlayblastManager(object):
         # prefix = version_pattern_match.group(1)
         # extension = version_pattern_match.group(4) or ""
         # TODO:replace string manipulations with a regex to extract filename without version and extension
-        name, extension = filename.rsplit('.')
+        self._app.logger.debug("filename = {0}".format(filename))
+        name, padding, extension = filename.rsplit('.')
         # self._app.logger.debug("get_playblast_ver:extension={0}, prefix = {1}, x ={2} ".format(extension, prefix, x))
         self._app.logger.debug("filename = {0}, name = {1}".format(filename, name[:-5]))
 

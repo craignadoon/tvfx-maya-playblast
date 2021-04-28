@@ -214,6 +214,16 @@ class AppDialog(QtGui.QWidget):
         """
         width, height = self.get_res()
 
+        if str(self.ui.cb_format.currentText()) == "image":
+            extension = ".jpg"
+            encoding = "jpg"
+        elif str(self.ui.cb_format.currentText()) == "avi":
+            extension = ".avi"
+            encoding = "none"
+        else:
+            extension = ".avi"
+            encoding = "none"
+
         playblastParams = {
             'startTime': int(self.ui.le_frame_start.text()),
             'endTime': int(self.ui.le_frame_end.text()),
@@ -231,8 +241,8 @@ class AppDialog(QtGui.QWidget):
             # 'viewer': True,
             'framePadding': int(self.ui.sb_padding.value()),
             # 'filename': maya_output,
-            'filename': self.pbMngr.get_temp_output('.avi')  # self.pbMngr.format_output_path(),
-            # 'compression': encoding
+            'filename': self.pbMngr.get_temp_output(extension),  # self.pbMngr.format_output_path(),
+            'compression': encoding
         }
         self.pbMngr.set_pass_type(self.pass_type)
         self.pbMngr.set_camera_type(self.camera_type)
