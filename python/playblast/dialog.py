@@ -10,9 +10,16 @@
 
 # by importing QT from sgtk rather than directly, we ensure that
 # the code will be compatible with both PySide and PyQt.
-import sgtk
+import os
 import traceback
+import subprocess
+from functools import partial
+
+import sgtk
 from sgtk.platform.qt import QtCore, QtGui
+
+import maya.cmds as cmds
+
 from .ui.dialog import Ui_Dialog
 from .playblast import PlayblastManager
 
@@ -21,7 +28,7 @@ camera_utils = sgtk.platform.import_framework("tvfx-maya-utils", "camera_utils")
 shotgun_menus = sgtk.platform.import_framework("tk-framework-qtwidgets", "shotgun_menus")
 
 
-def show_dialog(app_instance, entity_type, entity_ids, version_str='0.0.1'):
+def show_dialog(app_instance, version_str='0.0.1'):
     """
     Shows the main dialog window, using the special Shotgun multi-select mode.
     """
@@ -32,11 +39,9 @@ def show_dialog(app_instance, entity_type, entity_ids, version_str='0.0.1'):
     # we pass the dialog class to this method and leave the actual construction
     # to be carried out by toolkit.
     AppDialog.__version__ = version_str
-    app_instance.engine.show_dialog("Maya Playblast: v{}".format(version_str),  # window title
+    app_instance.engine.show_dialog("Maya Playblast - v{}".format(version_str),  # window title
                                     app_instance,                               # playblast instance
-                                    AppDialog,                 # window class to instantiate
-                                    entity_type,               # arguments to pass to constructor
-                                    entity_ids)
+                                    AppDialog)
 
 
 class AppDialog(QtGui.QWidget):
@@ -44,16 +49,20 @@ class AppDialog(QtGui.QWidget):
     Main application dialog window
     """
 
-    def __init__(self, entity_type, entity_ids):
+    def __init__(self, parent=None):
         """
         Constructor
         """
         # first, call the base class and let it do its thing.
-        QtGui.QWidget.__init__(self)
+        QtGui.QWidget.__init__(self, parent=parent)
 
         # now load in the UI that was created in the UI designer
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+
+        # --- add resolution presets
+        self.ui.tb_resolution_preset.hide()
+        self.ui.sb_scale.setValue(1.0)
 
         self.ui.cb_resolution.currentTextChanged.connect(self._toggle_custom_res_type)
         self.ui.cb_pass_type.currentTextChanged.connect(self._toggle_custom_pass_type)
@@ -65,47 +74,41 @@ class AppDialog(QtGui.QWidget):
         self.ui.le_frame_start.setValidator(QtGui.QIntValidator(self))
         self.ui.le_frame_end.setValidator(QtGui.QIntValidator(self))
 
-        # --- add resolution presets
-        res_from_sg = QtGui.QAction("From Shotgun", self)
-        res_from_render_globals = QtGui.QAction("From Render Settings", self)
-        res_from_windows = QtGui.QAction("From Window", self)
-        res_custom = QtGui.QAction("Custom", self)
-        self.res_preset_menu = shotgun_menus.ShotgunMenu(self)
-        self.res_preset_menu.add_group([res_from_sg, res_from_render_globals, res_from_windows, res_custom])
-        self.ui.sb_res_h.setDisabled(True)
-        self.ui.sb_res_w.setDisabled(True)
-        self.ui.tb_resolution_preset.setMenu(self.res_preset_menu)
-        self.ui.tb_resolution_preset.setDisabled(True)
-        # self.ui.cb_resolution.
-        # most of the useful accessors are available through the Application class instance
-        # it is often handy to keep a reference to this. You can get it via the following method:
-        self._app = sgtk.platform.current_bundle()
-        self._app.logger.debug("$$$$ self._app = {}".format(self._app))
-        self.context = None
-
-        self.pbMngr = PlayblastManager(self._app, self.context)
-        self.set_default_ui_data()
-        self._app.logger.info("$$$$ set_default_ui_data DONE ")
-
         # via the self._app handle we can for example access:
         # - The engine, via self._app.engine
         # - A Shotgun API instance, via self._app.shotgun
-        # - A tk API instance, via self._app.tk 
+        # - A tk API instance, via self._app.tk
+        self._app = sgtk.platform.current_bundle()
+        self.context = None
+
+        self.pbMngr = PlayblastManager(self._app, self.context, partial(self.show_status, 'Playblast in progres..'))
+        self.set_default_ui_data()
 
         # logging happens via a standard toolkit logger
         self._app.logger.info("Track's maya playblast")
 
         # lastly, set up our very basic UI
-        # self.ui.context.setText("Current selection type: %s, <br>Currently selected ids: %s" % (entity_type, entity_ids))
         self.ui.createPlayblast.clicked.connect(self.do_playblast)
 
+    def show_status(self, title, message):
+        self._app.engine.show_busy(title, message)
+
     def _toggle_custom_res_type(self, val):
+        if val == 'From Viewport':
+            w, h = self._get_maya_window_resolution()
+            self.ui.sb_res_w.setValue(w)
+            self.ui.sb_res_h.setValue(h)
+        elif val == 'From Render Settings':
+            w, h = self._get_maya_render_resolution()
+            self.ui.sb_res_w.setValue(w)
+            self.ui.sb_res_h.setValue(h)
+
         if val == 'Custom':
             self.ui.sb_res_w.setEnabled(True)
             self.ui.sb_res_h.setEnabled(True)
         else:
-            self.ui.sb_res_w.setVisible(False)
-            self.ui.sb_res_h.setVisible(False)
+            self.ui.sb_res_w.setEnabled(False)
+            self.ui.sb_res_h.setEnabled(False)
 
     def _toggle_custom_pass_type(self, val):
         if val == 'Custom':
@@ -119,18 +122,18 @@ class AppDialog(QtGui.QWidget):
         else:
             self.ui.le_camera_custom.setVisible(False)
 
-    # def _get_maya_window_resolution():
-    #     maya.cmds.currentTime(maya.cmds.currentTime(query=True))
-    #     panel = maya.cmds.playblast(activeEditor=True)
-    #     panel_name = panel.split("|")[-1]
-    #     width = maya.cmds.control(panel_name, query=True, width=True)
-    #     height = maya.cmds.control(panel_name, query=True, height=True)
-    #     return width, height
-    #
-    # def _get_maya_render_resolution():
-    #     width = maya.cmds.getAttr('defaultResolution.width')
-    #     height = maya.cmds.getAttr('defaultResolution.height')
-    #     return width, height
+    def _get_maya_window_resolution(self):
+        cmds.currentTime(cmds.currentTime(query=True))
+        panel = cmds.playblast(activeEditor=True)
+        panel_name = panel.split("|")[-1]
+        width = cmds.control(panel_name, query=True, width=True)
+        height = cmds.control(panel_name, query=True, height=True)
+        return width, height
+
+    def _get_maya_render_resolution(self):
+        width = cmds.getAttr('defaultResolution.width')
+        height = cmds.getAttr('defaultResolution.height')
+        return width, height
 
     def get_res(self):
         if self.ui.cb_resolution == "From Viewport":
@@ -157,7 +160,7 @@ class AppDialog(QtGui.QWidget):
             self.ui.le_frame_end.setText(str(end_frame))
 
             # SCALE:
-            self.ui.sb_scale.setValue(0.5)
+            self.ui.sb_scale.setValue(1.0)
 
             # FRAME PADDING: how many frames before the start frame
             self.ui.sb_padding.setValue(4)
@@ -254,8 +257,26 @@ class AppDialog(QtGui.QWidget):
         method invoked when ui's playblast button is clicked
         :return:
         """
-        overridePlayblastParams = {}
+        self.show_status('Playblast in progress..', 'Getting playblast out..')
         overridePlayblastParams = self.gatherUiData()
 
-        playblastFile = self.pbMngr.createPlayblast(overridePlayblastParams)
+        playblastFile, entity = self.pbMngr.createPlayblast(overridePlayblastParams)
         self._app.logger.info("Playblast created and uploaded to shotgun = {}".format(playblastFile))
+        self._app.engine.clear_busy()
+
+        QtGui.QMessageBox.information(self, 'Playblast created', 'A New Version of playblast has been created.')
+        try:
+            bin = 'rv'
+            if os.path.exists('/opt/rv/rv-centos7-x86-64-7.6.1/bin/rv'):
+                bin = '/opt/rv/rv-centos7-x86-64-7.6.1/bin/rv'
+            subprocess.Popen([bin, '-play', playblastFile])
+        except:
+            pass
+
+        url = 'https://trackvfx.shotgunstudio.com/detail/{}/{}'.format(entity['type'], entity['id'])
+        if os.name == 'posix':
+            subprocess.Popen(['xdg-open', url], close_fds=True)
+        elif os.name == 'nt':
+            os.startfile(url)
+
+

@@ -11,7 +11,8 @@
 
 from sgtk.platform import Application
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
+
 
 class PlayblastBase(Application):
     """
@@ -36,10 +37,8 @@ class PlayblastBase(Application):
 
         # first, set up our callback, calling out to a method inside the playblast module contained
         # in the python folder of the playblast
-        #menu_callback = lambda: app_payload.dialog.show_dialog(self)
         menu_callback = lambda: app_payload.dialog.show_dialog(self,
-                                                               __version__,
-                                                               "playblast app")
+                                                               __version__)
 
         # now register the command with the engine
         self.engine.register_command("Maya Playblast...",

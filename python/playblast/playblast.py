@@ -24,7 +24,7 @@ class PlayblastManager(object):
     """
     Main playblast functionality
     """
-    def __init__(self, app, context=None):
+    def __init__(self, app, context=None, emitter=None):
         """
         Construction
         """
@@ -35,10 +35,11 @@ class PlayblastManager(object):
         self._currentEngine = sgtk.platform.current_engine()
         self._tk = self._currentEngine.sgtk
 
+        self.emitter = emitter or self._app.logger.info
+
         # self._context = currentEngine.context
         if self._context is None:
             self._context = self._currentEngine.context
-                # self.get_context()
 
         self._app.logger.info("Playblast self._context = {}".format(self._context))
 
@@ -91,27 +92,11 @@ class PlayblastManager(object):
             self.camera_type = camera_type
 
     def get_temp_output(self, ext):
-        # todo: mktemp
-        self.mayaOutputPath = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-        if self.mayaOutputPath.name:
-            # self._app.logger.debug("get_temp_output:closing temp file")
-            # self.mayaOutputPath.close()
-            pb_path_formatted = str(os.path.dirname(self.mayaOutputPath.name).title()
-                                    + "\\"
-                                    + os.path.basename(self.mayaOutputPath.name))
-            self.mayaOutputPath.name = pb_path_formatted
-            return pb_path_formatted
-            # return self.mayaOutputPath.name
-        ver = 0
+        if not ext.startswith('.'):
+            ext = '.' + ext
 
-        # temp_dir = 'C:\\work\\tempPlayblast\\'
-        # temp_playblast = "{0}_{1}_playblast_v{2}.{3}".format(
-        #                         self._context.entity['name'],
-        #                         self._context.step['name'],
-        #                         ('%03d' % ver),
-        #                         ext)
-
-        self._app.logger.debug("get_temp_output: maya temp output file = {}".format(self.mayaOutputPath))
+        self.mayaOutputPath = tempfile.mktemp(suffix=ext, prefix='maya_playblast_')
+        return self.mayaOutputPath
 
     def get_frame_range(self):
         """
@@ -135,18 +120,19 @@ class PlayblastManager(object):
         :return:
             playblastPath: output playblast file path.
         """
+        self.emitter('Gathering user inputs..')
         self.playblastParams.update(override_playblast_params)
         # TODO: filename
         self._app.logger.debug("&&&&& self.playblastParams():")
         self._app.logger.debug(self.playblastParams)
         # if not self.focus:
         #     self.focus = True
-        panel = self.get_current_panel()
-        self._app.logger.debug("createPlayblast: panel = {}".format(panel))
-        self._app.logger.debug("createPlayblast: self.pass_type = {}".format(self.pass_type))
+        # panel = self.get_current_panel()
+        # self._app.logger.debug("createPlayblast: panel = {}".format(panel))
+        # self._app.logger.debug("createPlayblast: self.pass_type = {}".format(self.pass_type))
         # cmds.getPanel(withFocus=True)
         # cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
-        print "in playblast.py before creating playblast"
+        self.emitter('Running playblast..')
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
         self._app.logger.debug("createPlayblast: mayaOutputPath = {}".format(self.mayaOutputPath))
 
@@ -157,6 +143,7 @@ class PlayblastManager(object):
         else:
             ext = "avi"
         self.playblastPath, playblast_version = self.format_output_path(ext)
+        self.emitter('Getting latest version: {}'.format(playblast_version))
         self._app.logger.debug("formatted playblastPath = {}".format(self.playblastPath))
 
         # # check if any version of the published file exists on shotgun
@@ -165,14 +152,15 @@ class PlayblastManager(object):
 
         if os.path.exists(self.mayaOutputPath):
             self._app.logger.debug("createPlayblast: going to copy to formatted path")
-            result = shutil.move(self.mayaOutputPath, self.playblastPath)
+            self._app.logger.info('Copying mov file to publish location: {}'.format(self.playblastPath))
+            result = shutil.copy(self.mayaOutputPath, self.playblastPath)
             self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
 
         pb_name, file_ext = os.path.basename(self.playblastPath).split(".")
-        self.upload_to_shotgun(publish_name=pb_name[:-5],
-                               version_number=playblast_version)
+        version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
+                                                version_number=playblast_version)
 
-        return self.playblastPath
+        return self.playblastPath, version_entity
 
     def get_current_panel(self):
         """
@@ -213,7 +201,7 @@ class PlayblastManager(object):
         self._app.logger.debug(cmds.getPanel(type="modelPanel"))
 
         for panel_name in cmds.getPanel(type="modelPanel"):
-            print "panel_name = ", panel_name
+            print("panel_name = ", panel_name)
             self._app.logger.debug("panel_name: ={0}, camera_name = {1}".format(panel_name, camera_name))
             self._app.logger.debug("cmds.modelPanel(panel_name, query=True, camera=True): ={}".format(
                 cmds.modelPanel(panel_name, query=True, camera=True)))
@@ -497,7 +485,7 @@ class PlayblastManager(object):
         :return:
         """
         # register new Version entity in shotgun or update existing version
-        self._app.logger.debug('Creating Version entity:')
+        self.emitter('Uploading media to Shotgun entity')
         playblast_version_entity = self._context.sgtk.shotgun.create(
             'Version',
             {
@@ -518,6 +506,7 @@ class PlayblastManager(object):
         self._app.logger.debug('version_entity: {}', playblast_version_entity)
 
         # todo: version update and use publishPath (check fields first)
+        self.emitter('Registering playblast on shotgun as PublishedFile..')
         sgtk.util.register_publish(
                                     self._tk,
                                     self._context,
@@ -530,4 +519,6 @@ class PlayblastManager(object):
                                     )
 
         self._app.log_info("Playblast uploaded to shotgun")
+
+        return playblast_version_entity
 
