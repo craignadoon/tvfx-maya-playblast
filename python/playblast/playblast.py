@@ -2,6 +2,7 @@
 import glob
 import pprint
 import shutil
+import subprocess
 import tempfile
 
 import os
@@ -165,35 +166,80 @@ class PlayblastManager(object):
         if file_ext == ".avi":
             result = shutil.copy(self.mayaOutputPath, self.playblastPath)
         else:
-            head, ext = os.path.splitext(self.mayaOutputPath)
-            self._app.logger.debug("head= {0}, ext = {1}".format(head, ext))
-            seq_name, hashes = os.path.splitext(head)
-            self._app.logger.debug("hashes.count('#') = {}".format(hashes.count('#')))
-            pad = '.%0{}d'.format(hashes.count('#'))
-            self._app.logger.debug("seq_name= {0}, hashes= {1}, pad = {2}".format(seq_name, hashes, pad))
-            dir_name = os.path.dirname(self.playblastPath)
-            new_name = os.path.basename(self.playblastPath).split('.')[0]
-            search_path = seq_name + "*"
-            self._app.logger.debug("dirname= {0}, new_name= {1}, search_path = {2}".format(
-                dir_name, new_name, search_path))
+            # head, ext = os.path.splitext(self.mayaOutputPath)
+            # seq_name, hashes = os.path.splitext(head)
+            seq_name, hashes, ext = self.mayaOutputPath.split(".")
+            padding = '.%0{}d.'.format(hashes.count('#'))
+            self.mayaOutputPath = str(seq_name + padding + ext)
+            self._app.logger.debug("self.mayaOutputPath after formatting = {}".format(self.mayaOutputPath))
+            self._app.logger.debug("seq_name= {0}, hashes= {1}, ext = {2}".format(seq_name, hashes, ext))
 
-            for img_name in glob.glob(search_path):
-                shutil.copy(img_name, dir_name)
-                path, name = img_name.split("temp")
-                # path = path + "\\temp\\"
-                x, y, z = name.split('.')
-                frame_ext = y + "." + z
-                new_file_name = new_name + "." + frame_ext
-                print (new_file_name)
-                os.rename(os.path.join(dir_name, img_name), os.path.join(dir_name, new_file_name))
+            for i, frame_num in enumerate(range(override_playblast_params['startTime'],
+                                                override_playblast_params['endTime'])):
+                result = shutil.copy(self.mayaOutputPath%frame_num, self.playblastPath%frame_num)
+            self._app.logger.debug("Image sequence copied to playblast path= {}".format(self.playblastPath))
 
-                # result =
-            # self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
+            ffmpeg_mov = self.create_mov_from_images(override_playblast_params['startTime'])
+            self._app.logger.debug("createPlayblast: ffmpeg_mov = {}".format(ffmpeg_mov))
 
         version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
                                                 version_number=playblast_version)
 
         return self.playblastPath, version_entity
+
+    def create_mov_from_images(self, first):
+        mov_path = os.path.join(tempfile.mkdtemp(), 'mov.mov')
+
+        ffmpeg_args = ['ffmpeg',
+                       '-y',
+                       '-start_number', str(first),
+                       # '-framerate', str(self._framerate),
+                       '-filter_complex',
+                       'pad=ceil(iw/2)*2:ceil(ih/2)*2,'
+                       'drawtext='
+                       'start_number={first}:'
+                       'text=%{n}:'
+                       'fontcolor=white:'
+                       'fontsize=0.025*h:'
+                       'x=w*0.975-text_w:'
+                       'y=h*0.95'.format(first=first, n='{n}'),
+                       '-i', self.playblastPath,
+                       mov_path,
+                       ]
+
+        self._app.logger.debug("Trying {}".format(' '.join(ffmpeg_args)))
+
+        try:
+            proc = subprocess.Popen(ffmpeg_args,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            _stdout, _stderr = proc.communicate()
+            self._app.logger.debug('stdout is: {}'.format(_stdout))
+            self._app.logger.debug('stderr is: {}'.format(_stderr))
+        except Exception as e:
+            self._app.logger.debug("An exception was encountered:")
+            self._app.logger.debug(e)
+            mov_path = None
+
+        return mov_path
+
+    # MAYA_FRAMERATES = {'game': 15,
+    #                    'film': 24,
+    #                    'pal': 25,
+    #                    '29.97df': 29.97,
+    #                    'ntsc': 30,
+    #                    'show': 48,
+    #                    'palf': 50,
+    #                    'ntscf': 60
+    #                    }
+    #
+    # def _set_framerate(self):
+    #     framerate = maya.cmds.currentUnit(query=True, time=True)
+    #
+    #     self._framerate = self.MAYA_FRAMERATES.get(framerate)
+    #
+    #     if not framerate:
+    #         self._framerate = float(framerate[:-3])
 
     def get_current_panel(self):
         """
@@ -523,6 +569,7 @@ class PlayblastManager(object):
         """
         # register new Version entity in shotgun or update existing version
         self.emitter('Uploading media to Shotgun entity')
+
         playblast_version_entity = self._context.sgtk.shotgun.create(
             'Version',
             {
