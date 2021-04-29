@@ -1,5 +1,5 @@
 # coding=utf-8
-
+import glob
 import pprint
 import shutil
 import tempfile
@@ -95,7 +95,9 @@ class PlayblastManager(object):
         if not ext.startswith('.'):
             ext = '.' + ext
 
-        self.mayaOutputPath = tempfile.mktemp(suffix=ext, prefix='maya_playblast_')
+        # self.mayaOutputPath = tempfile.mktemp(suffix=ext, prefix='maya_playblast_')
+        self.mayaOutputPath = tempfile.mktemp(prefix='maya_playblast_')
+        self._app.logger.debug("get_temp_output: ext= {0}, self.mayaOutputPath ={1}".format(ext, self.mayaOutputPath))
         return self.mayaOutputPath
 
     def get_frame_range(self):
@@ -136,6 +138,8 @@ class PlayblastManager(object):
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
         self._app.logger.debug("createPlayblast: mayaOutputPath = {}".format(self.mayaOutputPath))
 
+
+
         # outputpath, ext = os.path.splitext(self.mayaOutputPath)
         # ext = (os.path.splitext(self.mayaOutputPath)[1]).split('.')[1]
         if self.mayaOutputPath.rsplit('.', 1)[1]:
@@ -150,15 +154,44 @@ class PlayblastManager(object):
         # versioned_pb_path = self.check_published_version()
         # self._app.logger.debug("createPlayblast: versioned_pb_path = {}".format(versioned_pb_path))
 
-        if os.path.exists(self.mayaOutputPath):
-            self._app.logger.debug("createPlayblast: going to copy to formatted path")
-            self._app.logger.info('Copying mov file to publish location: {}'.format(self.playblastPath))
-            result = shutil.copy(self.mayaOutputPath, self.playblastPath)
-            self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
-
         pb_name, padding, file_ext = os.path.basename(self.playblastPath).split(".")
-        self.upload_to_shotgun(publish_name=pb_name[:-5],
-                               version_number=playblast_version)
+        self._app.logger.debug("pb_name= {0}, padding= {1}, file_ext = {2}".format(pb_name, padding, file_ext))
+        self._app.logger.debug("self.mayaOutputPath = {}".format(self.mayaOutputPath))
+        self._app.logger.debug(os.path.exists(self.mayaOutputPath))
+
+        # if os.path.exists(self.mayaOutputPath):
+        self._app.logger.debug("createPlayblast: going to copy to formatted path")
+        self._app.logger.info('Copying mov file to publish location: {}'.format(self.playblastPath))
+        if file_ext == ".avi":
+            result = shutil.copy(self.mayaOutputPath, self.playblastPath)
+        else:
+            head, ext = os.path.splitext(self.mayaOutputPath)
+            self._app.logger.debug("head= {0}, ext = {1}".format(head, ext))
+            seq_name, hashes = os.path.splitext(head)
+            self._app.logger.debug("hashes.count('#') = {}".format(hashes.count('#')))
+            pad = '.%0{}d'.format(hashes.count('#'))
+            self._app.logger.debug("seq_name= {0}, hashes= {1}, pad = {2}".format(seq_name, hashes, pad))
+            dir_name = os.path.dirname(self.playblastPath)
+            new_name = os.path.basename(self.playblastPath).split('.')[0]
+            search_path = seq_name + "*"
+            self._app.logger.debug("dirname= {0}, new_name= {1}, search_path = {2}".format(
+                dir_name, new_name, search_path))
+
+            for img_name in glob.glob(search_path):
+                shutil.copy(img_name, dir_name)
+                path, name = img_name.split("temp")
+                # path = path + "\\temp\\"
+                x, y, z = name.split('.')
+                frame_ext = y + "." + z
+                new_file_name = new_name + "." + frame_ext
+                print (new_file_name)
+                os.rename(os.path.join(dir_name, img_name), os.path.join(dir_name, new_file_name))
+
+                # result =
+            # self._app.logger.debug("createPlayblast: shutil.move result = {}".format(result))
+
+        version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
+                                                version_number=playblast_version)
 
         return self.playblastPath, version_entity
 
@@ -290,7 +323,10 @@ class PlayblastManager(object):
         try:
             self._app.logger.debug("trying sgtk to create the publishPath")
             self._currentEngine.ensure_folder_exists(os.path.dirname(publishPath))
-            sgtk.util.filesystem.touch_file(publishPath)
+            # for i, frame_num in enumerate(range(start_frame, end_frame)):
+            # touch the slate frame
+            sgtk.util.filesystem.touch_file(publishPath%(self.start_frame-1))
+
             self._app.logger.debug("sgtk publishPath touched = {}".format(publishPath))
         except:
             if not os.path.exists(os.path.dirname(publishPath)):
