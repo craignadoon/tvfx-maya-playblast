@@ -31,6 +31,7 @@ requires_engine_version:
 
 # the frameworks required to run this playblast
 frameworks:
-  - {"name": "tvfx-maya-utils", "version": "v0.x.x"}
+  - { "name": "tvfx-maya-utils", "version": "v0.x.x"}
   - { "name": "tk-framework-shotgunutils", "version": "v5.x.x", "minimum_version": "v5.2.1" }
   - { "name": "tk-framework-qtwidgets", "version": "v2.x.x" }
+  - { "name": "tvfx-third-party", "version": "v0.x.x"}
