@@ -1,13 +1,16 @@
 # coding=utf-8
+import datetime
 import glob
 import pprint
 import shutil
 import subprocess
 import tempfile
+# import pwd
 
 import os
 import re
 
+import OpenImageIO
 import maya.cmds as cmds
 import sgtk
 
@@ -20,11 +23,18 @@ try:
 except ImportError:
     from PyQt4 import QtCore, QtGui
 
+from .slate import Slate
+
 
 class PlayblastManager(object):
     """
     Main playblast functionality
     """
+    BLANK_SLATE_PATH = os.path.abspath('C:\\Users\\Navpreet\\Pictures\\work-shots\\blank_square_slate.png')
+    FONT_SCALE = 0.0085
+    LINE_SPACING = 50
+    LINE_LENGTH = 70
+
     def __init__(self, app, context=None, emitter=None):
         """
         Construction
@@ -48,22 +58,24 @@ class PlayblastManager(object):
         self.pass_type = None
         self.description = None
         self.camera_type = None
+        self.focal_length = None
         # self.mayaOutputPath = self.get_temp_output()
         self.mayaOutputPath = None
         self.playblastPath = None
         self.playblastParams = {
-                            'offScreen': True,
-                            'percent': 50,
-                            'quality': 70,
-                            'viewer': True,
-                            'width': 960,
-                            'height': 540,
-                            'framePadding': 4,
-                            'format': 'avi',
-                            # 'encoding': 'jpg',
-                            # 'compression': 'None',
-                            'forceOverwrite': True,
-                            }
+            'offScreen': True,
+            'percent': 50,
+            'quality': 70,
+            'viewer': True,
+            'width': 960,
+            'height': 540,
+            'framePadding': 4,
+            'format': 'avi',
+            # 'encoding': 'jpg',
+            # 'compression': 'None',
+            'forceOverwrite': True,
+        }
+        self.slate = Slate(self._app, self.playblastParams, self.playblastPath, self.focal_length)
 
     def get_context(self):
         """
@@ -91,6 +103,9 @@ class PlayblastManager(object):
             self.camera_type = "persp"
         else:
             self.camera_type = camera_type
+
+    def set_focal_length(self, focal_length):
+        self.focal_length = focal_length
 
     def get_temp_output(self, ext):
         if not ext.startswith('.'):
@@ -139,8 +154,6 @@ class PlayblastManager(object):
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
         self._app.logger.debug("createPlayblast: mayaOutputPath = {}".format(self.mayaOutputPath))
 
-
-
         # outputpath, ext = os.path.splitext(self.mayaOutputPath)
         # ext = (os.path.splitext(self.mayaOutputPath)[1]).split('.')[1]
         if self.mayaOutputPath.rsplit('.', 1)[1]:
@@ -151,95 +164,42 @@ class PlayblastManager(object):
         self.emitter('Getting latest version: {}'.format(playblast_version))
         self._app.logger.debug("formatted playblastPath = {}".format(self.playblastPath))
 
-        # # check if any version of the published file exists on shotgun
-        # versioned_pb_path = self.check_published_version()
-        # self._app.logger.debug("createPlayblast: versioned_pb_path = {}".format(versioned_pb_path))
-
         pb_name, padding, file_ext = os.path.basename(self.playblastPath).split(".")
         self._app.logger.debug("pb_name= {0}, padding= {1}, file_ext = {2}".format(pb_name, padding, file_ext))
         self._app.logger.debug("self.mayaOutputPath = {}".format(self.mayaOutputPath))
         self._app.logger.debug(os.path.exists(self.mayaOutputPath))
 
         # if os.path.exists(self.mayaOutputPath):
-        self._app.logger.debug("createPlayblast: going to copy to formatted path")
-        self._app.logger.info('Copying mov file to publish location: {}'.format(self.playblastPath))
         if file_ext == ".avi":
             result = shutil.copy(self.mayaOutputPath, self.playblastPath)
         else:
-            # head, ext = os.path.splitext(self.mayaOutputPath)
-            # seq_name, hashes = os.path.splitext(head)
             seq_name, hashes, ext = self.mayaOutputPath.split(".")
             padding = '.%0{}d.'.format(hashes.count('#'))
             self.mayaOutputPath = str(seq_name + padding + ext)
             self._app.logger.debug("self.mayaOutputPath after formatting = {}".format(self.mayaOutputPath))
             self._app.logger.debug("seq_name= {0}, hashes= {1}, ext = {2}".format(seq_name, hashes, ext))
 
-            for i, frame_num in enumerate(range(override_playblast_params['startTime'],
-                                                override_playblast_params['endTime'])):
-                result = shutil.copy(self.mayaOutputPath%frame_num, self.playblastPath%frame_num)
+            for i, frame_num in enumerate(range(self.playblastParams['startTime'],
+                                                self.playblastParams['endTime'])):
+                result = shutil.copy(self.mayaOutputPath % frame_num, self.playblastPath % frame_num)
             self._app.logger.debug("Image sequence copied to playblast path= {}".format(self.playblastPath))
 
-            ffmpeg_mov = self.create_mov_from_images(override_playblast_params['startTime'])
+            # Create slate
+            slate = self.slate.create_slate(self.playblastPath)
+            ffmpeg_mov = self.slate.create_internal_mov(slate, self.playblastParams['startTime'])
             self._app.logger.debug("createPlayblast: ffmpeg_mov = {}".format(ffmpeg_mov))
+            # format the movie path as per template with mov extension
+            self.playblastParams['format'] = "mov"
+            self.playblastPath, playblast_version = self.format_output_path('mov')
+            result = shutil.copy(ffmpeg_mov, self.playblastPath)
+
+            self._app.logger.debug("createPlayblast: self.playblastPath(ffmpeg movie) = {}".format(self.playblastPath))
+            pb_name, file_ext = os.path.basename(self.playblastPath).split(".")
 
         version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
                                                 version_number=playblast_version)
 
         return self.playblastPath, version_entity
-
-    def create_mov_from_images(self, first):
-        mov_path = os.path.join(tempfile.mkdtemp(), 'mov.mov')
-
-        ffmpeg_args = ['ffmpeg',
-                       '-y',
-                       '-start_number', str(first),
-                       # '-framerate', str(self._framerate),
-                       '-filter_complex',
-                       'pad=ceil(iw/2)*2:ceil(ih/2)*2,'
-                       'drawtext='
-                       'start_number={first}:'
-                       'text=%{n}:'
-                       'fontcolor=white:'
-                       'fontsize=0.025*h:'
-                       'x=w*0.975-text_w:'
-                       'y=h*0.95'.format(first=first, n='{n}'),
-                       '-i', self.playblastPath,
-                       mov_path,
-                       ]
-
-        self._app.logger.debug("Trying {}".format(' '.join(ffmpeg_args)))
-
-        try:
-            proc = subprocess.Popen(ffmpeg_args,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            _stdout, _stderr = proc.communicate()
-            self._app.logger.debug('stdout is: {}'.format(_stdout))
-            self._app.logger.debug('stderr is: {}'.format(_stderr))
-        except Exception as e:
-            self._app.logger.debug("An exception was encountered:")
-            self._app.logger.debug(e)
-            mov_path = None
-
-        return mov_path
-
-    # MAYA_FRAMERATES = {'game': 15,
-    #                    'film': 24,
-    #                    'pal': 25,
-    #                    '29.97df': 29.97,
-    #                    'ntsc': 30,
-    #                    'show': 48,
-    #                    'palf': 50,
-    #                    'ntscf': 60
-    #                    }
-    #
-    # def _set_framerate(self):
-    #     framerate = maya.cmds.currentUnit(query=True, time=True)
-    #
-    #     self._framerate = self.MAYA_FRAMERATES.get(framerate)
-    #
-    #     if not framerate:
-    #         self._framerate = float(framerate[:-3])
 
     def get_current_panel(self):
         """
@@ -276,15 +236,7 @@ class PlayblastManager(object):
         :return: panel name
         """
         list_panel = []
-        # self._app.logger.debug("get_panel_from_camera: =")
-        # self._app.logger.debug(cmds.getPanel(type="modelPanel"))
-
         for panel_name in cmds.getPanel(type="modelPanel"):
-            print "panel_name = ", panel_name
-            # self._app.logger.debug("panel_name: ={0}, camera_name = {1}".format(panel_name, camera_name))
-            # self._app.logger.debug("cmds.modelPanel(panel_name, query=True, camera=True): ={}".format(
-            #     cmds.modelPanel(panel_name, query=True, camera=True)))
-
             if cmds.modelPanel(panel_name, query=True, camera=True) == camera_name:
                 self._app.logger.debug("in if condn")
                 list_panel.append(panel_name)
@@ -334,7 +286,7 @@ class PlayblastManager(object):
 
         if str(self.playblastParams.get('format')) == "image":
             template = self._tk.templates["playblast_image"]
-        elif str(self.playblastParams.get('format')) == "avi":
+        elif str(self.playblastParams.get('format')) == "avi" or "mov":
             template = self._tk.templates["playblast_mov"]
         else:
             self._app.logger.error("playblast format not supported")
@@ -344,7 +296,6 @@ class PlayblastManager(object):
         self._app.logger.debug("fields: {}".format(fields))
 
         # TODO: generated path's ext
-        # ext = (os.path.splitext(self.mayaOutputPath)[1]).split('.')[1]
         fields["ext"] = ext
         fields["publish_type"] = self.publish_type
         fields["plate_name"] = self.get_plate_name()
@@ -369,10 +320,7 @@ class PlayblastManager(object):
         try:
             self._app.logger.debug("trying sgtk to create the publishPath")
             self._currentEngine.ensure_folder_exists(os.path.dirname(publishPath))
-            # for i, frame_num in enumerate(range(start_frame, end_frame)):
-            # touch the slate frame
-            sgtk.util.filesystem.touch_file(publishPath%(self.start_frame-1))
-
+            sgtk.util.filesystem.touch_file(publishPath % (self.playblastParams['startTime']))
             self._app.logger.debug("sgtk publishPath touched = {}".format(publishPath))
         except:
             if not os.path.exists(os.path.dirname(publishPath)):
@@ -442,7 +390,10 @@ class PlayblastManager(object):
         # extension = version_pattern_match.group(4) or ""
         # TODO:replace string manipulations with a regex to extract filename without version and extension
         self._app.logger.debug("filename = {0}".format(filename))
-        name, padding, extension = filename.rsplit('.')
+        if self.playblastParams.get('format') == 'image':
+            name, padding, extension = filename.rsplit('.')
+        else:
+            name, extension = filename.rsplit('.')
         # self._app.logger.debug("get_playblast_ver:extension={0}, prefix = {1}, x ={2} ".format(extension, prefix, x))
         self._app.logger.debug("filename = {0}, name = {1}".format(filename, name[:-5]))
 
@@ -545,14 +496,14 @@ class PlayblastManager(object):
         pass_name = 'Main'
         # plates = get_plate_entity(context)
         plates = self._context.sgtk.shotgun.find(
-                    'PublishedFile',
-                    [
-                        ['entity', 'is', self._context.entity],
-                        ['sg_pass_type', 'is', pass_name]
-                    ],
-                    ['sg_client_name', 'description'],
-                    order=[{'field_name': 'sg_version_number', 'direction': 'desc'}]
-                ) or []
+            'PublishedFile',
+            [
+                ['entity', 'is', self._context.entity],
+                ['sg_pass_type', 'is', pass_name]
+            ],
+            ['sg_client_name', 'description'],
+            order=[{'field_name': 'sg_version_number', 'direction': 'desc'}]
+        ) or []
 
         plate_names = list()
         for plate in plates:
@@ -592,17 +543,16 @@ class PlayblastManager(object):
         # todo: version update and use publishPath (check fields first)
         self.emitter('Registering playblast on shotgun as PublishedFile..')
         sgtk.util.register_publish(
-                                    self._tk,
-                                    self._context,
-                                    self.playblastPath,
-                                    publish_name,
-                                    version_number,
-                                    comment=self.description,
-                                    published_file_type=self.publish_type,
-                                    version_entity=playblast_version_entity
-                                    )
+            self._tk,
+            self._context,
+            self.playblastPath,
+            publish_name,
+            version_number,
+            comment=self.description,
+            published_file_type=self.publish_type,
+            version_entity=playblast_version_entity
+        )
 
         self._app.log_info("Playblast uploaded to shotgun")
 
         return playblast_version_entity
-

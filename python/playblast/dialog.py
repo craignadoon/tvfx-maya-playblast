@@ -246,6 +246,8 @@ class AppDialog(QtGui.QWidget):
         }
         self.pbMngr.set_pass_type(self.pass_type)
         self.pbMngr.set_camera_type(self.camera_type)
+        self.pbMngr.set_focal_length(self.ui.sb_focal.value())
+
         description = 'FocalLength: {}mm, PassType: {}, CameraType: {}, Comments: {}'.format(
             self.ui.sb_focal.value(), self.pass_type, self.camera_type, self.ui.le_comments.text()
         )
