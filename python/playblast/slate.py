@@ -3,9 +3,12 @@ import shutil
 import subprocess
 
 import os
+import sys
+import argparse
 import tempfile
 
 import OpenImageIO
+
 
 class Slate(object):
     BLANK_SLATE_PATH = os.path.abspath('C:\\Users\\Navpreet\\Pictures\\work-shots\\blank_square_slate.png')
@@ -15,17 +18,23 @@ class Slate(object):
 
     def __init__(self, app, playblastParams, playblast_path, focal_length):
         """
-                Construction
-                """
+        Construction
+        """
         self.parent = None
         self._app = app
         self.pb_params = playblastParams
         self.pb_path = playblast_path
         self.pb_focal_length = focal_length
+        self.slate_data = None
 
-    def create_slate(self, playblast_path):
+    def create_slate(self, playblast_path, slate_data):
+        self.slate_data = slate_data
         self.pb_path = playblast_path
-        start_time = self.pb_params['startTime']
+
+        start_time = self.slate_data['start_time']
+        self._app.logger.debug("create_slate: start_time = {}".format(start_time))
+        self._app.logger.debug("create_slate: self.pb_path = {}".format(self.pb_path))
+        self._app.logger.debug("create_slate: self.pb_path % start_time = {}".format(self.pb_path % start_time))
 
         first_frame_path = self.pb_path % start_time
         self._app.logger.debug("create_slate: first_frame_path = {}".format(first_frame_path))
@@ -153,8 +162,12 @@ class Slate(object):
         # comment = self._format_comment_for_ffmpeg()
         # internal_slate_lines = []
         internal_slate_lines = [
-            ("'Shot\:\ '", "'shot_text'"),
-            ("'Version\:\ '", "'version_text'"),
+            ("'Project ID\:\ '", "'{id}'".format(id=self.slate_data['project_id'])),
+            ("'Name\:\ '", "'{name}'".format(name=self.slate_data['project_name'])),
+            # ("'Shot\:\ '", "'shot_text'"),
+            ("'Shot ID\:\ '", "'{id}'".format(id=self.slate_data['shot_id'])),
+            ("'Shot Name\:\ '", "'{name}'".format(name=self.slate_data['shot_name'])),
+            ("'Version\:\ '", "'version_text'".format(self.slate_data['playblast_version'])),
             ("'Frames\:\ '", "'{first} - {last} ({range} frames)'"
              .format(first=self.pb_params['startTime'],
                      last=self.pb_params['endTime'],

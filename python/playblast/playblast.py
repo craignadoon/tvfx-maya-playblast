@@ -62,6 +62,7 @@ class PlayblastManager(object):
         # self.mayaOutputPath = self.get_temp_output()
         self.mayaOutputPath = None
         self.playblastPath = None
+        self.playblast_mov_path = None
         self.playblastParams = {
             'offScreen': True,
             'percent': 50,
@@ -74,6 +75,7 @@ class PlayblastManager(object):
             # 'encoding': 'jpg',
             # 'compression': 'None',
             'forceOverwrite': True,
+            'showOrnaments': False
         }
         self.slate = Slate(self._app, self.playblastParams, self.playblastPath, self.focal_length)
 
@@ -105,7 +107,10 @@ class PlayblastManager(object):
             self.camera_type = camera_type
 
     def set_focal_length(self, focal_length):
-        self.focal_length = focal_length
+        if focal_length:
+            self.focal_length = focal_length
+        else: # todo: Confirm default focal length value
+            self.focal_length = 35
 
     def get_temp_output(self, ext):
         if not ext.startswith('.'):
@@ -161,7 +166,7 @@ class PlayblastManager(object):
         else:
             ext = "avi"
         self.playblastPath, playblast_version = self.format_output_path(ext)
-        self.emitter('Getting latest version: {}'.format(playblast_version))
+        # self.emitter('Getting latest version: {}'.format(playblast_version))
         self._app.logger.debug("formatted playblastPath = {}".format(self.playblastPath))
 
         pb_name, padding, file_ext = os.path.basename(self.playblastPath).split(".")
@@ -184,22 +189,41 @@ class PlayblastManager(object):
                 result = shutil.copy(self.mayaOutputPath % frame_num, self.playblastPath % frame_num)
             self._app.logger.debug("Image sequence copied to playblast path= {}".format(self.playblastPath))
 
-            # Create slate
-            slate = self.slate.create_slate(self.playblastPath)
-            ffmpeg_mov = self.slate.create_internal_mov(slate, self.playblastParams['startTime'])
-            self._app.logger.debug("createPlayblast: ffmpeg_mov = {}".format(ffmpeg_mov))
             # format the movie path as per template with mov extension
             self.playblastParams['format'] = "mov"
-            self.playblastPath, playblast_version = self.format_output_path('mov')
-            result = shutil.copy(ffmpeg_mov, self.playblastPath)
+            self.playblast_mov_path, playblast_version = self.format_output_path('mov')
+            self.playblastParams['format'] = "image"
 
-            self._app.logger.debug("createPlayblast: self.playblastPath(ffmpeg movie) = {}".format(self.playblastPath))
-            pb_name, file_ext = os.path.basename(self.playblastPath).split(".")
+            # Create slate
+            slate_data = self.gather_slate_data(playblast_version)
+            slate = self.slate.create_slate(self.playblastPath, slate_data)
+            ffmpeg_mov = self.slate.create_internal_mov(slate, self.playblastParams['startTime'])
+            self._app.logger.debug("createPlayblast: ffmpeg_mov = {}".format(ffmpeg_mov))
+
+            result = shutil.copy(ffmpeg_mov, self.playblast_mov_path)
+
+            self._app.logger.debug("self.playblast_mov_path(ffmpeg movie) = {}".format(self.playblast_mov_path))
+            pb_name, file_ext = os.path.basename(self.playblast_mov_path).split(".")
 
         version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
                                                 version_number=playblast_version)
 
         return self.playblastPath, version_entity
+
+    def gather_slate_data(self, playblast_version):
+        context = self._context
+        data = {
+            #'show_info': "Project name = {0}, Project id = {1}".format(context.project['name'], context.project['id']),
+            'project_name': context.project['name'],
+            'project_id': context.project['id'],
+            'shot_name': context.entity['name'],
+            'shot_id': context.entity['id'],
+            # 'shot_info': "Shot name = {0}, Shot id = {1}".format(context.entity['name'], context.entity['id']),
+            'start_time': self.playblastParams['startTime'],
+            'playblast_version': playblast_version,
+            'focal_length': self.focal_length,
+        }
+        return data
 
     def get_current_panel(self):
         """
@@ -512,6 +536,29 @@ class PlayblastManager(object):
         self._app.logger.debug("plate_names = {}".format(plate_names))
         return plate_names[0]
 
+    # def create_version_entity(self, publish_name):
+    #     self.emitter('Creating version entity')
+    #     playblast_version_entity = self._context.sgtk.shotgun.create(
+    #         'Version',
+    #         {
+    #             'code': publish_name,
+    #             # 'code': os.path.splitext(os.path.basename(movie_path))[0],
+    #             'entity': self._context.entity,
+    #             'project': self._context.project,
+    #             'user': self._context.user,
+    #             'description': self.description,  # 'Version creation from playblast tool',
+    #             'sg_path_to_movie': self.playblastPath,
+    #             # 'sg_path_to_frames': str(published_plate),
+    #             'sg_version_type': 'Artist Version',
+    #         }
+    #     )
+    #     self._context.sgtk.shotgun.upload(
+    #         'Version', playblast_version_entity['id'], self.playblastPath, 'sg_uploaded_movie'
+    #     )
+    #     self._app.logger.debug('version_entity: {}', playblast_version_entity)
+    #
+    #     return playblast_version_entity
+    #
     def upload_to_shotgun(self, publish_name, version_number):
         """
         To upload the playblast img seq/movie to shotgun
@@ -520,6 +567,14 @@ class PlayblastManager(object):
         """
         # register new Version entity in shotgun or update existing version
         self.emitter('Uploading media to Shotgun entity')
+
+        self._app.logger.debug('MOV PATH FOR VERSION ENTITY: format = {}'.format(self.playblastParams['format']))
+        if self.playblastParams['format'] == 'image':
+            self._app.logger.debug('self.playblast_mov_path: {}'.format(self.playblast_mov_path))
+            movie_to_upload = self.playblast_mov_path
+        else:
+            self._app.logger.debug('playblastPath: {}'.format(self.playblastPath))
+            movie_to_upload = self.playblastPath
 
         playblast_version_entity = self._context.sgtk.shotgun.create(
             'Version',
@@ -530,22 +585,21 @@ class PlayblastManager(object):
                 'project': self._context.project,
                 'user': self._context.user,
                 'description': self.description,  # 'Version creation from playblast tool',
-                'sg_path_to_movie': self.playblastPath,
+                'sg_path_to_movie': movie_to_upload,
                 # 'sg_path_to_frames': str(published_plate),
                 'sg_version_type': 'Artist Version',
             }
         )
         self._context.sgtk.shotgun.upload(
-            'Version', playblast_version_entity['id'], self.playblastPath, 'sg_uploaded_movie'
+            'Version', playblast_version_entity['id'], movie_to_upload, 'sg_uploaded_movie'
         )
         self._app.logger.debug('version_entity: {}', playblast_version_entity)
 
-        # todo: version update and use publishPath (check fields first)
         self.emitter('Registering playblast on shotgun as PublishedFile..')
         sgtk.util.register_publish(
             self._tk,
             self._context,
-            self.playblastPath,
+            movie_to_upload,
             publish_name,
             version_number,
             comment=self.description,
@@ -556,3 +610,5 @@ class PlayblastManager(object):
         self._app.log_info("Playblast uploaded to shotgun")
 
         return playblast_version_entity
+
+
