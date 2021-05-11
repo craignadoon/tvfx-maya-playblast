@@ -210,21 +210,6 @@ class PlayblastManager(object):
 
         return self.playblastPath, version_entity
 
-    def gather_slate_data(self, playblast_version):
-        context = self._context
-        data = {
-            #'show_info': "Project name = {0}, Project id = {1}".format(context.project['name'], context.project['id']),
-            'project_name': context.project['name'],
-            'project_id': context.project['id'],
-            'shot_name': context.entity['name'],
-            'shot_id': context.entity['id'],
-            # 'shot_info': "Shot name = {0}, Shot id = {1}".format(context.entity['name'], context.entity['id']),
-            'start_time': self.playblastParams['startTime'],
-            'playblast_version': playblast_version,
-            'focal_length': self.focal_length,
-        }
-        return data
-
     def get_current_panel(self):
         """
         get current panel in focus for maya
@@ -611,4 +596,41 @@ class PlayblastManager(object):
 
         return playblast_version_entity
 
+    def gather_slate_data(self, playblast_version):
+        context = self._context
+        data = {
+            #'show_info': "Project name = {0}, Project id = {1}".format(context.project['name'], context.project['id']),
+            'project_name': context.project['name'],
+            'project_id': context.project['id'],
+            'shot_name': context.entity['name'],
+            'shot_id': context.entity['id'],
+            # 'shot_info': "Shot name = {0}, Shot id = {1}".format(context.entity['name'], context.entity['id']),
+            'start_time': self.playblastParams['startTime'],
+            'playblast_version': playblast_version,
+            'focal_length': self.focal_length,
+            'artist': context.user['name'],
+            'frame_rate': self.get_frame_rate()
+        }
+        return data
 
+    def get_frame_rate(self):
+        """
+        Return an int of the current frame rate
+        """
+        currentUnit = cmds.currentUnit(query=True, time=True)
+        if currentUnit == 'film':
+            return 24
+        if currentUnit == 'show':
+            return 48
+        if currentUnit == 'pal':
+            return 25
+        if currentUnit == 'ntsc':
+            return 30
+        if currentUnit == 'palf':
+            return 50
+        if currentUnit == 'ntscf':
+            return 60
+        if 'fps' in currentUnit:
+            return int(currentUnit.substitute('fps', ''))
+
+        return 1

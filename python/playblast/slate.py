@@ -12,8 +12,10 @@ import OpenImageIO
 
 class Slate(object):
     BLANK_SLATE_PATH = os.path.abspath('C:\\Users\\Navpreet\\Pictures\\work-shots\\blank_square_slate.png')
-    FONT_SCALE = 0.0085
-    LINE_SPACING = 50
+    # FONT_SCALE = 0.0085
+    FONT_SCALE = 0.0090
+    # LINE_SPACING = 50
+    LINE_SPACING = 60
     LINE_LENGTH = 70
 
     def __init__(self, app, playblastParams, playblast_path, focal_length):
@@ -72,28 +74,38 @@ class Slate(object):
 
     def create_mov_from_images(self, first):
         mov_path = os.path.join(tempfile.mkdtemp(), 'mov.mov')
+        frame_rate = self.slate_data['frame_rate']
+        self._app.logger.debug("frame_rate:{}".format(frame_rate))
 
         ffmpeg_args = ['ffmpeg',
                        '-y',
                        '-start_number', str(first),
-                       # '-framerate', str(self._framerate),
+                       '-framerate', str(frame_rate),
                        '-filter_complex',
-                       'pad=ceil(iw/2)*2:ceil(ih/2)*2,'
-                       'drawtext='
-                       'start_number={first}:'
-                       'text=%{n}:'
-                       'fontcolor=white:'
-                       'fontsize=0.025*h:'
-                       'x=w*0.975-text_w:'
-                       'y=h*0.95'.format(first=first, n='{n}'),
+            'pad=ceil(iw/2)*2:ceil(ih/2)*2,',
+        'drawtext=start_number={first}:text=%{n}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.95'.format(
+            first=first, n='{n}'),
+        'drawtext=text={frame_rate}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.25'.format(
+                           frame_rate=frame_rate),
                        '-i', self.pb_path,
                        mov_path,
                        ]
-
+        # ffmpeg_args = [
+        #     'ffmpeg',
+        #     '-i', self.pb_path,
+        #     '-start_number', str(first),
+        #     '-framerate', str(frame_rate),
+        #     '-filter_complex',
+        #     'pad=ceil(iw/2)*2:ceil(ih/2)*2,',
+        #     "[in]drawtext=start_number={first}:text=%{n}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.95'.format(first=first, n='{n}'),"
+        #     "drawtext=text={frame_rate}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.95'.format(frame_rate=frame_rate),"
+        #     "drawtext=text={focal}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.95'.format(focal='35'),[out]",
+        #     mov_path,
+        # ]
         self._app.logger.debug("Trying {}".format(' '.join(ffmpeg_args)))
 
         try:
-            proc = subprocess.Popen(ffmpeg_args,
+            proc = subprocess.Popen(ffmpeg_args,shell=True,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             _stdout, _stderr = proc.communicate()
@@ -157,27 +169,27 @@ class Slate(object):
     def _set_internal_slate_lines(self):
         # artist = self.ARTISTS.get(pwd.getpwuid(os.getuid())[0])
         # if not artist:
-        artist = 'Track VFX'
+        # artist = 'Track VFX'
 
         # comment = self._format_comment_for_ffmpeg()
         # internal_slate_lines = []
         internal_slate_lines = [
-            ("'Project ID\:\ '", "'{id}'".format(id=self.slate_data['project_id'])),
             ("'Name\:\ '", "'{name}'".format(name=self.slate_data['project_name'])),
+            ("'Project ID\:\ '", "'{id}'".format(id=self.slate_data['project_id'])),
             # ("'Shot\:\ '", "'shot_text'"),
             ("'Shot ID\:\ '", "'{id}'".format(id=self.slate_data['shot_id'])),
             ("'Shot Name\:\ '", "'{name}'".format(name=self.slate_data['shot_name'])),
-            ("'Version\:\ '", "'version_text'".format(self.slate_data['playblast_version'])),
-            ("'Frames\:\ '", "'{first} - {last} ({range} frames)'"
+            ("'Version\:\ '", "'{version}'".format(version=self.slate_data['playblast_version'])),
+            ("'Frames\:\ '", "'{first}-{last} ({range}f)'"
              .format(first=self.pb_params['startTime'],
                      last=self.pb_params['endTime'],
                      range=self.pb_params['endTime'] - self.pb_params['startTime'] + 1)),
-            ("'Resolution\:\ '", "'{w} x {h}'".format(w=self.pb_params['width'],
+            ("'Resolution\:\ '", "'{w}x{h}'".format(w=self.pb_params['width'],
                                                       h=self.pb_params['height'])),
-            ("'Focal Length\:\ '", "'{focal} mm'".format(focal=self.pb_focal_length)),
+            ("'Focal Length\:\ '", "'{focal} mm'".format(focal=self.slate_data['focal_length'])),
             # ("'Distortion\:\ '", "'{distortion}'".format(distortion=self._distortion)),
             ("''", "''"),
-            ("'Artist\:\ '", "'{artist}'".format(artist=artist)),
+            ("'Artist\:\ '", "'{artist}'".format(artist=self.slate_data['artist'])),
             ("'Date\:\ '", "'{date}'".format(date=datetime.date.today())),
             # ("'Time Log\:\ '", "'{time_log} hours'".format(time_log=self._time_log)),
             ("''", "''"),
@@ -262,3 +274,4 @@ class Slate(object):
         output_buf.write(output_path)
 
         return output_path
+
