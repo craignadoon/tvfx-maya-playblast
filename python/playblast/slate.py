@@ -6,7 +6,6 @@ import os
 import sys
 import argparse
 import tempfile
-
 import OpenImageIO
 
 
@@ -76,32 +75,26 @@ class Slate(object):
         mov_path = os.path.join(tempfile.mkdtemp(), 'mov.mov')
         frame_rate = self.slate_data['frame_rate']
         self._app.logger.debug("frame_rate:{}".format(frame_rate))
+        camera = self.slate_data['camera']
+        focal = self.slate_data['focal_length']
 
         ffmpeg_args = ['ffmpeg',
                        '-y',
                        '-start_number', str(first),
-                       '-framerate', str(frame_rate),
+                       # '-framerate', str(frame_rate),
                        '-filter_complex',
-            'pad=ceil(iw/2)*2:ceil(ih/2)*2,',
-        'drawtext=start_number={first}:text=%{n}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.95'.format(
-            first=first, n='{n}'),
-        'drawtext=text={frame_rate}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.25'.format(
-                           frame_rate=frame_rate),
+                       'pad=ceil(iw/2)*2:ceil(ih/2)*2,'
+                       'drawtext='
+                       'start_number={first}:'
+                       'text=FrameNo-%{n}__{focal}mm__{cam}_Camera:'
+                       'fontcolor=white:'
+                       'fontsize=0.025*h:'
+                       'x=w*0.975-text_w:'
+                       'y=h*0.95'.format(first=first, n='{n}', focal=focal, cam=camera),
                        '-i', self.pb_path,
                        mov_path,
                        ]
-        # ffmpeg_args = [
-        #     'ffmpeg',
-        #     '-i', self.pb_path,
-        #     '-start_number', str(first),
-        #     '-framerate', str(frame_rate),
-        #     '-filter_complex',
-        #     'pad=ceil(iw/2)*2:ceil(ih/2)*2,',
-        #     "[in]drawtext=start_number={first}:text=%{n}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.95'.format(first=first, n='{n}'),"
-        #     "drawtext=text={frame_rate}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.95'.format(frame_rate=frame_rate),"
-        #     "drawtext=text={focal}:fontcolor=white:fontsize=0.025*h:x=w*0.975-text_w:y=h*0.95'.format(focal='35'),[out]",
-        #     mov_path,
-        # ]
+
         self._app.logger.debug("Trying {}".format(' '.join(ffmpeg_args)))
 
         try:
@@ -137,11 +130,6 @@ class Slate(object):
             index = 1
             x_offset = ''
 
-        # if client:
-        #     lines = self._client_slate_lines
-        #     y_offset = 0.46
-        # else:
-        # lines = self._internal_slate_lines
         lines = self._set_internal_slate_lines()
         y_offset = 0.425
 
@@ -167,16 +155,10 @@ class Slate(object):
         return ffmpeg_stuff
 
     def _set_internal_slate_lines(self):
-        # artist = self.ARTISTS.get(pwd.getpwuid(os.getuid())[0])
-        # if not artist:
-        # artist = 'Track VFX'
 
-        # comment = self._format_comment_for_ffmpeg()
-        # internal_slate_lines = []
         internal_slate_lines = [
             ("'Name\:\ '", "'{name}'".format(name=self.slate_data['project_name'])),
             ("'Project ID\:\ '", "'{id}'".format(id=self.slate_data['project_id'])),
-            # ("'Shot\:\ '", "'shot_text'"),
             ("'Shot ID\:\ '", "'{id}'".format(id=self.slate_data['shot_id'])),
             ("'Shot Name\:\ '", "'{name}'".format(name=self.slate_data['shot_name'])),
             ("'Version\:\ '", "'{version}'".format(version=self.slate_data['playblast_version'])),
@@ -187,7 +169,6 @@ class Slate(object):
             ("'Resolution\:\ '", "'{w}x{h}'".format(w=self.pb_params['width'],
                                                       h=self.pb_params['height'])),
             ("'Focal Length\:\ '", "'{focal} mm'".format(focal=self.slate_data['focal_length'])),
-            # ("'Distortion\:\ '", "'{distortion}'".format(distortion=self._distortion)),
             ("''", "''"),
             ("'Artist\:\ '", "'{artist}'".format(artist=self.slate_data['artist'])),
             ("'Date\:\ '", "'{date}'".format(date=datetime.date.today())),

@@ -5,7 +5,6 @@ import pprint
 import shutil
 import subprocess
 import tempfile
-# import pwd
 
 import os
 import re
@@ -115,9 +114,10 @@ class PlayblastManager(object):
     def get_temp_output(self, ext):
         if not ext.startswith('.'):
             ext = '.' + ext
-
-        # self.mayaOutputPath = tempfile.mktemp(suffix=ext, prefix='maya_playblast_')
-        self.mayaOutputPath = tempfile.mktemp(prefix='maya_playblast_')
+        if ext == ".avi":
+            self.mayaOutputPath = tempfile.mktemp(suffix=ext, prefix='maya_playblast_')
+        else:
+            self.mayaOutputPath = tempfile.mktemp(prefix='maya_playblast_')
         self._app.logger.debug("get_temp_output: ext= {0}, self.mayaOutputPath ={1}".format(ext, self.mayaOutputPath))
         return self.mayaOutputPath
 
@@ -159,24 +159,28 @@ class PlayblastManager(object):
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
         self._app.logger.debug("createPlayblast: mayaOutputPath = {}".format(self.mayaOutputPath))
 
-        # outputpath, ext = os.path.splitext(self.mayaOutputPath)
-        # ext = (os.path.splitext(self.mayaOutputPath)[1]).split('.')[1]
-        if self.mayaOutputPath.rsplit('.', 1)[1]:
-            ext = self.mayaOutputPath.rsplit('.', 1)[1]
+        if self.playblastParams['format'] == 'image':
+            extension = "jpg"
         else:
-            ext = "avi"
-        self.playblastPath, playblast_version = self.format_output_path(ext)
+            extension = "avi"
+
+        self.playblastPath, playblast_version = self.format_output_path(extension)
         # self.emitter('Getting latest version: {}'.format(playblast_version))
         self._app.logger.debug("formatted playblastPath = {}".format(self.playblastPath))
 
-        pb_name, padding, file_ext = os.path.basename(self.playblastPath).split(".")
-        self._app.logger.debug("pb_name= {0}, padding= {1}, file_ext = {2}".format(pb_name, padding, file_ext))
+        if self.playblastParams['format'] == 'image':
+            pb_name, padding, file_ext = os.path.basename(self.playblastPath).split(".")
+            self._app.logger.debug("pb_name= {0}, padding= {1}, file_ext = {2}".format(pb_name, padding, file_ext))
+        else:
+            pb_name, file_ext = os.path.basename(self.playblastPath).split(".")
+            self.emitter('Getting latest version: {}'.format(playblast_version))
+            self._app.logger.debug("pb_name= {0}, file_ext = {1}".format(pb_name, file_ext))
+
         self._app.logger.debug("self.mayaOutputPath = {}".format(self.mayaOutputPath))
         self._app.logger.debug(os.path.exists(self.mayaOutputPath))
 
-        # if os.path.exists(self.mayaOutputPath):
-        if file_ext == ".avi":
-            result = shutil.copy(self.mayaOutputPath, self.playblastPath)
+        if file_ext == "avi":
+            result = shutil.copyfile(self.mayaOutputPath, self.playblastPath)
         else:
             seq_name, hashes, ext = self.mayaOutputPath.split(".")
             padding = '.%0{}d.'.format(hashes.count('#'))
@@ -188,10 +192,11 @@ class PlayblastManager(object):
                                                 self.playblastParams['endTime'])):
                 result = shutil.copy(self.mayaOutputPath % frame_num, self.playblastPath % frame_num)
             self._app.logger.debug("Image sequence copied to playblast path= {}".format(self.playblastPath))
-
+            # self.emitter('Image sequence copied to playblast path: {}'.format(self.playblastPath))
             # format the movie path as per template with mov extension
             self.playblastParams['format'] = "mov"
             self.playblast_mov_path, playblast_version = self.format_output_path('mov')
+            self.emitter('Getting latest version: {}'.format(playblast_version))
             self.playblastParams['format'] = "image"
 
             # Create slate
@@ -344,13 +349,7 @@ class PlayblastManager(object):
         self._app.logger.debug("format_output_path: published_version = {}".format(published_version))
         self._app.logger.debug("format_output_path: fields[version] = {}".format(fields["version"]))
 
-        # if published_version: # i.e. if we have a published version of the published entity on shotgun
-        #     fields["version"] = published_version
-        #     publishPath = template.apply_fields(fields)
-        #     return publishPath, published_version   # we use the version published on shotgun as the base.
-        # else:                       # else we look for paths on local to help format a path as per template
-        #
-        return publishPath, fields["version"]  # and version used to create the file path
+        return publishPath, fields["version"]
 
     def get_published_version(self, path, publish_type=None, increment=True):
         """
@@ -599,17 +598,16 @@ class PlayblastManager(object):
     def gather_slate_data(self, playblast_version):
         context = self._context
         data = {
-            #'show_info': "Project name = {0}, Project id = {1}".format(context.project['name'], context.project['id']),
             'project_name': context.project['name'],
             'project_id': context.project['id'],
             'shot_name': context.entity['name'],
             'shot_id': context.entity['id'],
-            # 'shot_info': "Shot name = {0}, Shot id = {1}".format(context.entity['name'], context.entity['id']),
             'start_time': self.playblastParams['startTime'],
             'playblast_version': playblast_version,
             'focal_length': self.focal_length,
             'artist': context.user['name'],
-            'frame_rate': self.get_frame_rate()
+            'frame_rate': self.get_frame_rate(),
+            'camera': self.camera_type
         }
         return data
 
