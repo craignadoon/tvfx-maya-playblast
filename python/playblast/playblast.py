@@ -29,7 +29,7 @@ class PlayblastManager(object):
     """
     Main playblast functionality
     """
-    BLANK_SLATE_PATH = os.path.abspath('C:\\Users\\Navpreet\\Pictures\\work-shots\\blank_square_slate.png')
+    BLANK_SLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'track_slate.png'))
     FONT_SCALE = 0.0085
     LINE_SPACING = 50
     LINE_LENGTH = 70
@@ -46,6 +46,8 @@ class PlayblastManager(object):
         self._tk = self._currentEngine.sgtk
 
         self.emitter = emitter or self._app.logger.info
+
+        # self.status("progress bar here")
 
         # self._context = currentEngine.context
         if self._context is None:
@@ -144,6 +146,7 @@ class PlayblastManager(object):
             playblastPath: output playblast file path.
         """
         self.emitter('Gathering user inputs..')
+
         self.playblastParams.update(override_playblast_params)
         # TODO: filename
         self._app.logger.debug("&&&&& self.playblastParams():")
@@ -192,7 +195,7 @@ class PlayblastManager(object):
                                                 self.playblastParams['endTime'])):
                 result = shutil.copy(self.mayaOutputPath % frame_num, self.playblastPath % frame_num)
             self._app.logger.debug("Image sequence copied to playblast path= {}".format(self.playblastPath))
-            # self.emitter('Image sequence copied to playblast path: {}'.format(self.playblastPath))
+            self.emitter('Image sequence copied to playblast path: {}'.format(self.playblastPath))
             # format the movie path as per template with mov extension
             self.playblastParams['format'] = "mov"
             self.playblast_mov_path, playblast_version = self.format_output_path('mov')
