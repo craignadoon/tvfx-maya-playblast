@@ -214,6 +214,9 @@ class AppDialog(QtGui.QWidget):
             # FORMAT: default playblast format is set to movie as of now
             self.ui.cb_format.setCurrentIndex(0)
 
+            # disable avi format for now
+            self.ui.cb_format.model().item(1).setEnabled(False)
+
             # pass type
             self.ui.cb_pass_type.setCurrentIndex(0)
             self.pbMngr.set_pass_type(str(self.ui.cb_pass_type.currentText()))

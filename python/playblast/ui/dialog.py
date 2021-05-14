@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\work\TrackVFX\tk\tvfx-maya-playblast\resources\dialog.ui'
 #
-# Created: Wed May 12 16:04:22 2021
+# Created: Fri May 14 09:46:34 2021
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -13,12 +13,19 @@ try:
 except ImportError:
     from PyQt4 import QtCore, QtGui
 
+
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(489, 402)
+        Dialog.resize(532, 403)
         self.gridLayout_3 = QtGui.QGridLayout(Dialog)
         self.gridLayout_3.setObjectName("gridLayout_3")
+        self.verticalLayout_2 = QtGui.QVBoxLayout()
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.hl_control_layout_3 = QtGui.QHBoxLayout()
+        self.hl_control_layout_3.setObjectName("hl_control_layout_3")
+        self.verticalLayout_2.addLayout(self.hl_control_layout_3)
+        self.gridLayout_3.addLayout(self.verticalLayout_2, 2, 0, 1, 1)
         self.groupBox_3 = QtGui.QGroupBox(Dialog)
         self.groupBox_3.setTitle("")
         self.groupBox_3.setObjectName("groupBox_3")
@@ -156,6 +163,9 @@ class Ui_Dialog(object):
         self.label_5_cameraType = QtGui.QLabel(self.frame)
         self.label_5_cameraType.setObjectName("label_5_cameraType")
         self.gridLayout_4.addWidget(self.label_5_cameraType, 0, 0, 1, 1)
+        self.label_4_passType = QtGui.QLabel(self.frame)
+        self.label_4_passType.setObjectName("label_4_passType")
+        self.gridLayout_4.addWidget(self.label_4_passType, 1, 0, 1, 1)
         self.horizontalLayout_8 = QtGui.QHBoxLayout()
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
         self.cb_camera_type = QtGui.QComboBox(self.frame)
@@ -170,9 +180,6 @@ class Ui_Dialog(object):
         self.le_camera_custom.setObjectName("le_camera_custom")
         self.horizontalLayout_8.addWidget(self.le_camera_custom)
         self.gridLayout_4.addLayout(self.horizontalLayout_8, 0, 1, 1, 1)
-        self.label_4_passType = QtGui.QLabel(self.frame)
-        self.label_4_passType.setObjectName("label_4_passType")
-        self.gridLayout_4.addWidget(self.label_4_passType, 1, 0, 1, 1)
         self.horizontalLayout_9 = QtGui.QHBoxLayout()
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
         self.cb_pass_type = QtGui.QComboBox(self.frame)
@@ -187,9 +194,6 @@ class Ui_Dialog(object):
         self.le_pass_type_custom.setObjectName("le_pass_type_custom")
         self.horizontalLayout_9.addWidget(self.le_pass_type_custom)
         self.gridLayout_4.addLayout(self.horizontalLayout_9, 1, 1, 1, 1)
-        self.label_comment = QtGui.QLabel(self.frame)
-        self.label_comment.setObjectName("label_comment")
-        self.gridLayout_4.addWidget(self.label_comment, 2, 0, 1, 1)
         self.le_comments = QtGui.QLineEdit(self.frame)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -198,6 +202,9 @@ class Ui_Dialog(object):
         self.le_comments.setSizePolicy(sizePolicy)
         self.le_comments.setObjectName("le_comments")
         self.gridLayout_4.addWidget(self.le_comments, 2, 1, 1, 1)
+        self.label_comment = QtGui.QLabel(self.frame)
+        self.label_comment.setObjectName("label_comment")
+        self.gridLayout_4.addWidget(self.label_comment, 2, 0, 1, 1)
         self.createPlayblast = QtGui.QPushButton(self.frame)
         font = QtGui.QFont()
         font.setWeight(75)
@@ -206,12 +213,6 @@ class Ui_Dialog(object):
         self.createPlayblast.setObjectName("createPlayblast")
         self.gridLayout_4.addWidget(self.createPlayblast, 2, 2, 1, 1)
         self.gridLayout_3.addWidget(self.frame, 1, 0, 1, 1)
-        self.verticalLayout_2 = QtGui.QVBoxLayout()
-        self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.hl_control_layout_3 = QtGui.QHBoxLayout()
-        self.hl_control_layout_3.setObjectName("hl_control_layout_3")
-        self.verticalLayout_2.addLayout(self.hl_control_layout_3)
-        self.gridLayout_3.addLayout(self.verticalLayout_2, 2, 0, 1, 1)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -230,25 +231,25 @@ class Ui_Dialog(object):
         self.label_3.setText(QtGui.QApplication.translate("Dialog", "-", None, QtGui.QApplication.UnicodeUTF8))
         self.label_scale.setText(QtGui.QApplication.translate("Dialog", "Scale", None, QtGui.QApplication.UnicodeUTF8))
         self.label_format.setText(QtGui.QApplication.translate("Dialog", "Format", None, QtGui.QApplication.UnicodeUTF8))
-        self.cb_format.setItemText(0, QtGui.QApplication.translate("Dialog", "avi", None, QtGui.QApplication.UnicodeUTF8))
-        self.cb_format.setItemText(1, QtGui.QApplication.translate("Dialog", "image", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_format.setItemText(0, QtGui.QApplication.translate("Dialog", "image", None, QtGui.QApplication.UnicodeUTF8))
+        self.cb_format.setItemText(1, QtGui.QApplication.translate("Dialog", "avi", None, QtGui.QApplication.UnicodeUTF8))
         self.label_framePadding.setText(QtGui.QApplication.translate("Dialog", "FramePadding", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("Dialog", "Off Screen", None, QtGui.QApplication.UnicodeUTF8))
         self.checkBox.setText(QtGui.QApplication.translate("Dialog", "Yes/No?", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5_cameraType.setText(QtGui.QApplication.translate("Dialog", "Camera Type", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_4_passType.setText(QtGui.QApplication.translate("Dialog", "Pass Type", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_camera_type.setItemText(0, QtGui.QApplication.translate("Dialog", "Freemove", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_camera_type.setItemText(1, QtGui.QApplication.translate("Dialog", "Lockoff", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_camera_type.setItemText(2, QtGui.QApplication.translate("Dialog", "Nodal", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_camera_type.setItemText(3, QtGui.QApplication.translate("Dialog", "Static", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_camera_type.setItemText(4, QtGui.QApplication.translate("Dialog", "Custom", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_4_passType.setText(QtGui.QApplication.translate("Dialog", "Pass Type", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_pass_type.setItemText(0, QtGui.QApplication.translate("Dialog", "Godcam", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_pass_type.setItemText(1, QtGui.QApplication.translate("Dialog", "Greyshade", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_pass_type.setItemText(2, QtGui.QApplication.translate("Dialog", "Stabilization", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_pass_type.setItemText(3, QtGui.QApplication.translate("Dialog", "Wireframe", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_pass_type.setItemText(4, QtGui.QApplication.translate("Dialog", "Custom", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_comment.setText(QtGui.QApplication.translate("Dialog", "Comment", None, QtGui.QApplication.UnicodeUTF8))
         self.le_comments.setPlaceholderText(QtGui.QApplication.translate("Dialog", "Please describe your work..", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_comment.setText(QtGui.QApplication.translate("Dialog", "Comment", None, QtGui.QApplication.UnicodeUTF8))
         self.createPlayblast.setText(QtGui.QApplication.translate("Dialog", "Playblast!", None, QtGui.QApplication.UnicodeUTF8))
 
 import resources_rc
