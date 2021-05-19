@@ -29,10 +29,6 @@ class PlayblastManager(object):
     """
     Main playblast functionality
     """
-    BLANK_SLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'track_slate.png'))
-    FONT_SCALE = 0.0085
-    LINE_SPACING = 50
-    LINE_LENGTH = 70
 
     def __init__(self, app, context=None, emitter=None):
         """
