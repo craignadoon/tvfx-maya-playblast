@@ -10,10 +10,8 @@ import OpenImageIO
 
 
 class Slate(object):
-    BLANK_SLATE_PATH = os.path.abspath('C:\\Users\\Navpreet\\Pictures\\work-shots\\blank_square_slate.png')
-    # FONT_SCALE = 0.0085
+    BLANK_SLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'track_slate.png'))
     FONT_SCALE = 0.0090
-    # LINE_SPACING = 50
     LINE_SPACING = 60
     LINE_LENGTH = 70
 
@@ -29,6 +27,9 @@ class Slate(object):
         self.slate_data = None
 
     def create_slate(self, playblast_path, slate_data):
+        """
+        main function to create slate
+        """
         self.slate_data = slate_data
         self.pb_path = playblast_path
 
@@ -112,7 +113,8 @@ class Slate(object):
         #                    "drawtext=text='2021-04-23':x=w*0.90:y=h*0.02:"
         #                    "fontsize=16:fontcolor=white:box=1:boxcolor=black@0.4").format()
         # drawtext_string = ("select='not(eq(n\,{first})',drawtext=start_number={first}:"
-        drawtext_string = ("select='not(n=0)',drawtext=start_number={first}:"
+        # drawtext_string = ("select='not(n=0)',drawtext=start_number={first}:"
+        drawtext_string = ("select='gte(n\,0)',drawtext=start_number={first}:"
                            "fontfile=C:\Windows\Fonts\Calibri.ttf:text='%{n}':"
                            "x=w*0.98-text_w:y=h*0.92:fontsize=20:fontcolor=white,"
                            "drawtext=fontfile=C:\Windows\Fonts\Calibri.ttf:start_number={first}:text='{focal}mm':" 
