@@ -236,7 +236,7 @@ class Ui_Dialog(object):
         self.label_framePadding.setText(QtGui.QApplication.translate("Dialog", "FramePadding", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("Dialog", "Off Screen", None, QtGui.QApplication.UnicodeUTF8))
         self.checkBox.setText(QtGui.QApplication.translate("Dialog", "Yes/No?", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_5_cameraType.setText(QtGui.QApplication.translate("Dialog", "Camera Type", Nsone, QtGui.QApplication.UnicodeUTF8))
+        self.label_5_cameraType.setText(QtGui.QApplication.translate("Dialog", "Camera Type", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4_passType.setText(QtGui.QApplication.translate("Dialog", "Pass Type", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_camera_type.setItemText(0, QtGui.QApplication.translate("Dialog", "Freemove", None, QtGui.QApplication.UnicodeUTF8))
         self.cb_camera_type.setItemText(1, QtGui.QApplication.translate("Dialog", "Lockoff", None, QtGui.QApplication.UnicodeUTF8))
