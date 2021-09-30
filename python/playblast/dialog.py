@@ -41,12 +41,12 @@ def show_dialog(app_instance, version_str='0.0.1'):
     # in order to handle UIs seamlessly, each toolkit engine has methods for launching
     # different types of windows. By using these methods, your windows will be correctly
     # decorated and handled in a consistent fashion by the system. 
-    
+
     # we pass the dialog class to this method and leave the actual construction
     # to be carried out by toolkit.
     AppDialog.__version__ = version_str
     app_instance.engine.show_dialog("Maya Playblast - v{}".format(version_str),  # window title
-                                    app_instance,                               # playblast instance
+                                    app_instance,  # playblast instance
                                     AppDialog)
 
 
@@ -85,8 +85,6 @@ class AppDialog(QtGui.QWidget):
         # Progress bar
         # self.ui.progressBar.setValue(0)
 
-
-
         # --- add resolution presets
         self.ui.tb_resolution_preset.hide()
         self.ui.sb_scale.setValue(1.0)
@@ -118,6 +116,8 @@ class AppDialog(QtGui.QWidget):
         # lastly, set up our very basic UI
         # self.ui.createPlayblast.clicked.connect(self.ui.progressBar)
         self.ui.createPlayblast.clicked.connect(self.do_playblast)
+        # self.setHeight(380)
+        self.resize(500, 250)
 
     def set_status(self, message, msecs=1460, log=True):
         if self.ui.status_bar:
@@ -197,14 +197,23 @@ class AppDialog(QtGui.QWidget):
             self._app.logger.info("set_default_ui_data: start_frame, end_frame = {0}, {1}".format(start_frame,
                                                                                                   end_frame))
             self.ui.le_frame_start.setText(str(start_frame))
+
             self.ui.le_frame_end.setText(str(end_frame))
+            # self.ui.le_frame_end.setVisible(False)
+
+            # getting default values for yaml file
+            camera_type_value, pass_type, frame_padding, scale = self.pbMngr.get_defaults_values()
 
             # SCALE:
-            self.ui.sb_scale.setValue(1.0)
+            self.ui.sb_scale.setValue(scale)
+            self.hide_elements()
 
             # FRAME PADDING: how many frames before the start frame
-            self.ui.sb_padding.setValue(4)
-            self.ui.sb_focal.setValue(35)
+            self.ui.sb_padding.setValue(frame_padding)
+            # self.ui.sb_padding.setVisible(False)
+
+            self.ui.sb_focal.setText(self.pbMngr.get_focal_length_min_max())
+            self.ui.sb_focal.setEnabled(False)
 
             # RESOLUTION : (hard coding for now)
 
@@ -215,18 +224,22 @@ class AppDialog(QtGui.QWidget):
             self.ui.cb_format.setCurrentIndex(0)
 
             # disable avi format for now
-            self.ui.cb_format.model().item(1).setEnabled(False)
+            # self.ui.cb_format.model().item(1).setEnabled(False)
 
             # pass type
-            self.ui.cb_pass_type.setCurrentIndex(0)
+            self.ui.cb_pass_type.setCurrentText(pass_type)
             self.pbMngr.set_pass_type(str(self.ui.cb_pass_type.currentText()))
 
             # camera type
-            self.ui.cb_camera_type.setCurrentIndex(0)
+            self.ui.cb_camera_type.setCurrentText(camera_type_value)
             self.pbMngr.set_camera_type(str(self.ui.cb_camera_type.currentText()))
 
             # description
             context = self.pbMngr.get_context()
+
+            # adding to resolutions
+            self._toggle_custom_res_type('From Viewport')
+
             self._app.logger.debug(
                 "set_default_ui_data: playblast for {0}, {1}".format(context.entity, context.project))
 
@@ -289,10 +302,10 @@ class AppDialog(QtGui.QWidget):
         }
         self.pbMngr.set_pass_type(self.pass_type)
         self.pbMngr.set_camera_type(self.camera_type)
-        self.pbMngr.set_focal_length(self.ui.sb_focal.value())
+        self.pbMngr.set_focal_length(self.ui.sb_focal.text())
 
-        description = 'FocalLength: {}mm, PassType: {}, CameraType: {}, Comments: {}'.format(
-            self.ui.sb_focal.value(), self.pass_type, self.camera_type, self.ui.le_comments.text()
+        description = 'FocalLength: {}, PassType: {}, CameraType: {}, Comments: {}'.format(
+            self.ui.sb_focal.text(), self.pass_type, self.camera_type, self.ui.le_comments.text()
         )
         self.pbMngr.set_description(description)
 
@@ -322,7 +335,6 @@ class AppDialog(QtGui.QWidget):
         self.set_status('User input gathered')
         playblastFile, entity = self.pbMngr.createPlayblast(overridePlayblastParams)
 
-
         # self._app.logger.info("Playblast created and uploaded to shotgun = {}".format(playblastFile))
         # self._app.engine.clear_busy()
         # msg.information(self, 'Playblast created', 'A New Version of playblast has been created.')
@@ -345,4 +357,12 @@ class AppDialog(QtGui.QWidget):
         elif os.name == 'nt':
             os.startfile(url)
 
-
+    def hide_elements(self, value=False):
+        self.ui.le_frame_start.setVisible(value)
+        self.ui.le_frame_end.setVisible(value)
+        self.ui.label_3.setVisible(value)
+        self.ui.label_1_frameRange.setVisible(value)
+        self.ui.label_format.setVisible(value)
+        self.ui.label_framePadding.setVisible(value)
+        self.ui.sb_padding.setVisible(value)
+        self.ui.cb_format.setVisible(value)

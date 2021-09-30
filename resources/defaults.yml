@@ -1,0 +1,11 @@
+
+# default_options client spec
+default_options: &default_options
+  camera_type: Freemove
+  pass_type: Wireframe
+  frame_padding: 4
+  scale: 1.0
+
+
+# Adding client spec
+track: *default_options

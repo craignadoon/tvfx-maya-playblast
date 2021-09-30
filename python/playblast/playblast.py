@@ -11,6 +11,7 @@ import re
 
 import OpenImageIO
 import maya.cmds as cmds
+import maya.OpenMaya as OpenMaya
 import sgtk
 
 import tank
@@ -23,6 +24,8 @@ except ImportError:
     from PyQt4 import QtCore, QtGui
 
 from .slate import Slate
+
+BASE_DIR_PATH = os.path.dirname(__file__).replace('\\', '/')
 
 
 class PlayblastManager(object):
@@ -61,7 +64,7 @@ class PlayblastManager(object):
         self.playblastPath = None
         self.playblast_mov_path = None
         self.playblastParams = {
-            'offScreen': True,
+            'offScreen': False,
             'percent': 50,
             'quality': 70,
             'viewer': True,
@@ -72,9 +75,12 @@ class PlayblastManager(object):
             # 'encoding': 'jpg',
             # 'compression': 'None',
             'forceOverwrite': True,
-            'showOrnaments': False
+            'showOrnaments': True,
+            'clearCache': True,
+            'sequenceTime': False
         }
         self.slate = Slate(self._app, self.playblastParams, self.playblastPath, self.focal_length)
+        self.camera_shape = self.get_current_camera()
 
     def get_context(self):
         """
@@ -128,9 +134,15 @@ class PlayblastManager(object):
         """
         start = int(cmds.playbackOptions(q=True, minTime=True))
         end = int(cmds.playbackOptions(q=True, maxTime=True))
-        self._app.logger.debug("get_frame_range(): start, end frame = {0}, {1}".format(start, end))
+        self.emitter("self._context.entity = {}".format(self._context.entity))
+        shot_info = self._context.sgtk.shotgun.find_one(self._context.entity['type'],
+                                                        [['id', 'is', self._context.entity['id']]],
+                                                        ['sg_head_in', 'sg_tail_out'])
+        start_frame = int(shot_info['sg_head_in'] or start)
+        last_frame = int(shot_info['sg_tail_out'] or end)
+        self._app.logger.debug("get_frame_range(): start, end frame = {0}, {1}".format(start_frame, last_frame))
 
-        return start, end
+        return start_frame, last_frame
 
     def createPlayblast(self, override_playblast_params):
         """
@@ -154,9 +166,20 @@ class PlayblastManager(object):
         # self._app.logger.debug("createPlayblast: self.pass_type = {}".format(self.pass_type))
         # cmds.getPanel(withFocus=True)
         # cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
-        self.emitter('Running playblast..')
+        self.emitter('Running playblast..!!!!!!!!!!!!!!')
+
+        # adding the HUD For the FL
+        cmds.headsUpDisplay(rp=(9, 9))
+        cmds.headsUpDisplay('FL99', s=9, b=9, p=20, bs='small', ba='right', da='right', lfs='large', dfs='large', l='',
+                            c=self.get_focal_length)
+
+        cmds.expression(n='CUSTOMHUD', s='headsUpDisplay -r FL99;')
+
         self.mayaOutputPath = cmds.playblast(**self.playblastParams)
         self._app.logger.debug("createPlayblast: mayaOutputPath = {}".format(self.mayaOutputPath))
+
+        cmds.headsUpDisplay(rp=(9, 9))
+        cmds.delete('CUSTOMHUD')
 
         if self.playblastParams['format'] == 'image':
             extension = "jpg"
@@ -631,3 +654,59 @@ class PlayblastManager(object):
             return int(currentUnit.substitute('fps', ''))
 
         return 1
+
+    def get_focal_length_min_max(self):
+        key_values = cmds.keyframe('%s.focalLength' % self.camera_shape, q=True, vc=True)
+        if key_values and len(key_values) > 1:
+            key_values = set(key_values)
+            return '%s - %s mm' % (min(key_values), max(key_values))
+        else:
+            return '%s mm' % cmds.getAttr('%s.focalLength' % self.camera_shape)
+
+    def get_focal_length(self):
+        # self.emitter('self.camera_shape.. %s' % self.camera_shape)
+        if self.camera_shape:
+            return '%smm' % round(float(cmds.getAttr('%s.focalLength' % self.camera_shape)), 2)
+        else:
+            return '%smm' % self.focal_length
+
+    def get_current_camera(self):
+        panel = cmds.getPanel(withFocus=True)
+
+        if cmds.getPanel(typeOf=panel) != 'modelPanel':
+            for p in cmds.getPanel(visiblePanels=True):
+                if cmds.getPanel(typeOf=p) == 'modelPanel':
+                    panel = p
+                    cmds.setFocus(panel)
+                    break
+
+        if cmds.getPanel(typeOf=panel) != 'modelPanel':
+            OpenMaya.MGlobal.displayWarning('Please highlight a camera viewport.')
+            return False
+
+        cam_shape = cmds.modelEditor(panel, query=True, camera=True)
+        if not cam_shape:
+            return False
+
+        if cmds.nodeType(cam_shape) == 'transform':
+            return cmds.listRelatives(cam_shape, c=True, path=True)[0]
+
+        return cam_shape
+
+    @property
+    def client_info(self):
+
+        client_info = self._context.sgtk.shotgun.find_one(
+            'CustomNonProjectEntity30', [['sg_projects', 'is', self._context.project]], ['sg_client_code'])
+
+        return client_info
+
+    def get_defaults_values(self):
+        from tank_vendor import yaml
+        client_code = self.client_info['sg_client_code']
+        setting_yaml_file = BASE_DIR_PATH.replace('/python/playblast', '/resources/defaults.yml')
+        fopen = open(setting_yaml_file)
+        yaml_data = yaml.load(fopen)
+        client_data = yaml_data[client_code] if client_code in yaml_data else yaml_data['default_options']
+
+        return client_data['camera_type'], client_data['pass_type'], client_data['frame_padding'], client_data['scale']
