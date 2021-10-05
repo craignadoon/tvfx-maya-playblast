@@ -116,8 +116,16 @@ class AppDialog(QtGui.QWidget):
         # lastly, set up our very basic UI
         # self.ui.createPlayblast.clicked.connect(self.ui.progressBar)
         self.ui.createPlayblast.clicked.connect(self.do_playblast)
+        self.ui.pb_cancel.clicked.connect(self._on_cancel)
         # self.setHeight(380)
         self.resize(500, 250)
+
+    def _on_cancel(self):
+        """
+        Called when the cancel button is clicked
+        """
+        self._exit_code = QtGui.QDialog.Rejected
+        self.close()
 
     def set_status(self, message, msecs=1460, log=True):
         if self.ui.status_bar:
@@ -183,7 +191,8 @@ class AppDialog(QtGui.QWidget):
         else:
             w = self.ui.sb_res_w.value()
             h = self.ui.sb_res_h.value()
-
+        if 2048 < int(w):
+            w, h = self.pbMngr.get_resolution(w, h)
         return w, h
 
     def set_default_ui_data(self):
@@ -212,8 +221,8 @@ class AppDialog(QtGui.QWidget):
             self.ui.sb_padding.setValue(frame_padding)
             # self.ui.sb_padding.setVisible(False)
 
-            self.ui.sb_focal.setText(self.pbMngr.get_focal_length_min_max())
-            self.ui.sb_focal.setEnabled(False)
+            self.ui.le_focal_length.setText(self.pbMngr.get_focal_length_min_max())
+            self.ui.le_focal_length.setEnabled(False)
 
             # RESOLUTION : (hard coding for now)
 
@@ -292,22 +301,23 @@ class AppDialog(QtGui.QWidget):
             'width': width,
             'height': height,
 
-            'offScreen': True,
+            'offScreen': True if self.ui.checkBox.isChecked() else False,
             # 'quality': 70,
             # 'viewer': True,
             'framePadding': int(self.ui.sb_padding.value()),
             # 'filename': maya_output,
-            'filename': self.pbMngr.get_temp_output(extension),  # self.pbMngr.format_output_path(),
+            'filename': self.pbMngr.get_temp_output(extension),  # self.pbMngr.fofrmat_output_path(),
             'compression': encoding
         }
         self.pbMngr.set_pass_type(self.pass_type)
         self.pbMngr.set_camera_type(self.camera_type)
-        self.pbMngr.set_focal_length(self.ui.sb_focal.text())
+        self.pbMngr.set_focal_length(self.ui.le_focal_length.text())
 
         description = 'FocalLength: {}, PassType: {}, CameraType: {}, Comments: {}'.format(
-            self.ui.sb_focal.text(), self.pass_type, self.camera_type, self.ui.le_comments.text()
+            self.ui.le_focal_length.text(), self.pass_type, self.camera_type, self.ui.le_comments.text()
         )
         self.pbMngr.set_description(description)
+        self.pbMngr.upload_to_sg = True if self.ui.cb_upload_sg.isChecked() else False
 
         self._app.logger.debug("playblastParams gathered: ")
         self._app.logger.debug(playblastParams)
@@ -351,11 +361,12 @@ class AppDialog(QtGui.QWidget):
         except:
             pass
 
-        url = 'https://trackvfx.shotgunstudio.com/detail/{}/{}'.format(entity['type'], entity['id'])
-        if os.name == 'posix':
-            subprocess.Popen(['xdg-open', url], close_fds=True)
-        elif os.name == 'nt':
-            os.startfile(url)
+        if entity:
+            url = 'https://trackvfx.shotgunstudio.com/detail/{}/{}'.format(entity['type'], entity['id'])
+            if os.name == 'posix':
+                subprocess.Popen(['xdg-open', url], close_fds=True)
+            elif os.name == 'nt':
+                os.startfile(url)
 
     def hide_elements(self, value=False):
         self.ui.le_frame_start.setVisible(value)

@@ -11,7 +11,7 @@
 
 from sgtk.platform import Application
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 
 class PlayblastBase(Application):

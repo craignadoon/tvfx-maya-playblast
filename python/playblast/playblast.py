@@ -63,6 +63,7 @@ class PlayblastManager(object):
         self.mayaOutputPath = None
         self.playblastPath = None
         self.playblast_mov_path = None
+        self.upload_to_sg = True 
         self.playblastParams = {
             'offScreen': False,
             'percent': 50,
@@ -77,7 +78,7 @@ class PlayblastManager(object):
             'forceOverwrite': True,
             'showOrnaments': True,
             'clearCache': True,
-            'sequenceTime': False
+            'sequenceTime': False,
         }
         self.slate = Slate(self._app, self.playblastParams, self.playblastPath, self.focal_length)
         self.camera_shape = self.get_current_camera()
@@ -167,6 +168,10 @@ class PlayblastManager(object):
         # cmds.getPanel(withFocus=True)
         # cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
         self.emitter('Running playblast..!!!!!!!!!!!!!!')
+        if self.camera_shape == 'perspShape':
+            self.playblastParams['showOrnaments'] = False
+        else:
+            self.playblastParams['showOrnaments'] = True
 
         # adding the HUD For the FL
         cmds.headsUpDisplay(rp=(9, 9))
@@ -232,10 +237,23 @@ class PlayblastManager(object):
             self._app.logger.debug("self.playblast_mov_path(ffmpeg movie) = {}".format(self.playblast_mov_path))
             pb_name, file_ext = os.path.basename(self.playblast_mov_path).split(".")
 
+        if not self.upload_to_sg:
+            return self.playblastPath, None
+        self._app.logger.debug("Uploading to sg = {}".format(self.playblast_mov_path))
         version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
                                                 version_number=playblast_version)
 
         return self.playblastPath, version_entity
+
+    def get_resolution(self, res_w, res_h):
+        max_w = 2048
+        # res_w = 3072
+        # res_h = 1296
+
+        if res_w > max_w:
+            res_w = max_w
+            res_h = max_w * res_h / res_w
+        return res_w, res_h
 
     def get_current_panel(self):
         """
@@ -656,6 +674,8 @@ class PlayblastManager(object):
         return 1
 
     def get_focal_length_min_max(self):
+        if self.camera_shape == 'perspShape':
+            return "NA"
         key_values = cmds.keyframe('%s.focalLength' % self.camera_shape, q=True, vc=True)
         if key_values and len(key_values) > 1:
             key_values = set(key_values)
