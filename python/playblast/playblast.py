@@ -679,9 +679,11 @@ class PlayblastManager(object):
         key_values = cmds.keyframe('%s.focalLength' % self.camera_shape, q=True, vc=True)
         if key_values and len(key_values) > 1:
             key_values = set(key_values)
-            return '%s - %s mm' % (min(key_values), max(key_values))
+            min_value = round(float(min(key_values)), 2)
+            max_value = round(float(max(key_values)), 2)
+            return '%s - %s mm' % (min_value, max_value)
         else:
-            return '%s mm' % cmds.getAttr('%s.focalLength' % self.camera_shape)
+            return '%s mm' % round(float(cmds.getAttr('%s.focalLength' % self.camera_shape)), 2)
 
     def get_focal_length(self):
         # self.emitter('self.camera_shape.. %s' % self.camera_shape)

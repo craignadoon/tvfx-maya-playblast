@@ -14,14 +14,17 @@ from distutils import spawn
 #
 ffmpeg = spawn.find_executable('ffmpeg')
 
+BASE_DIR = os.path.dirname(__file__).replace("\\", '/')
+
 if not ffmpeg:
     if os.name == 'nt':
         ffmpeg = os.path.dirname(__file__).replace('/python/playblast', '/resources/third-party/window/bin/ffmpeg.exe')
 
 
 class Slate(object):
-    BLANK_SLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__).replace("\\", '/').
-                                                    replace('/python/playblast', '/resources/track_slate.png')))
+    BLANK_SLATE_PATH = os.path.abspath(BASE_DIR.replace('/python/playblast', '/resources/track_slate.png'))
+    TAHOMA_FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/tahoma.ttf')
+    DEJAVUSANS_BOLD_FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/DejaVuSans-Bold.ttf')
     FONT_SCALE = 0.0090
     LINE_SPACING = 60
     LINE_LENGTH = 70
@@ -67,7 +70,7 @@ class Slate(object):
 
         self._app.logger.debug("stdout = {}".format(stdout))
         self._app.logger.debug("stderr = {}".format(stderr))
-        
+
         slate_path = self._match_resolution(slate_path, first_frame_path)
 
         self._app.logger.debug("create_slate: slate_path (2) = {}".format(slate_path))
@@ -128,26 +131,23 @@ class Slate(object):
         # drawtext_string = ("select='not(eq(n\,{first})',drawtext=start_number={first}:"
         # drawtext_string = ("select='not(n=0)',drawtext=start_number={first}:"
         drawtext_string = ("select='gte(n\,0)',drawtext=start_number={first}:"
-                           "fontfile=C:\Windows\Fonts\Calibri.ttf:text='%{n}':"
+                           "fontfile={font_file}:text='%{n}':"
                            "x=w*0.98-text_w:y=h*0.92:fontsize=20:fontcolor=DAF7A6,"
                            # "drawtext=fontfile=C:\Windows\Fonts\Calibri.ttf:start_number={first}:text='{focal}mm':" 
                            # "x=w*0.98-text_w:y=h*0.88:fontsize=14:fontcolor=white,"
-                           "drawtext=fontfile=C:\Windows\Fonts\Tahoma.ttf:text='{shotname}':"
+                           "drawtext=fontfile={font_file}:text='{shotname}':"
                            "x=w*0.50:y=h*0.92:fontsize=16:fontcolor=DAF7A6,"
-                           "drawtext=fontfile=C:\Windows\Fonts\Tahoma.ttf:text='{project}':"
+                           "drawtext=fontfile={font_file}:text='{project}':"
                            "x=w*0.50:y=h*0.02:fontsize=16:fontcolor=DAF7A6,"
-                           "drawtext=fontfile=C:\Windows\Fonts\Calibri.ttf:text='{artist}':"
+                           "drawtext=fontfile={font_file}:text='{artist}':"
                            "x=w*0.02:y=h*0.92:fontsize=16:fontcolor=DAF7A6," 
-                           "drawtext=fontfile=C:\Windows\Fonts\Calibri.ttf:text='{camera}':"
+                           "drawtext=fontfile={font_file}:text='{camera}':"
                            "x=w*0.02:y=h*0.02:fontsize=16:fontcolor=DAF7A6," 
                            "drawtext=text='{date_time}':x=w*0.90:y=h*0.02:"
-                           "fontsize=16:fontcolor=DAF7A6").format(first=first, n='{n}',
-                                                                                          focal=focal,
-                                                                                          project=project,
-                                                                                          shotname=shotname,
-                                                                                          artist=artist,
-                                                                                          camera=camera,
-                                                                                          date_time=datetime.date.today())
+                           "fontsize=16:fontcolor=DAF7A6").format(first=first, n='{n}', focal=focal,
+                                                                  project=project, shotname=shotname, artist=artist,
+                                                                  camera=camera, date_time=datetime.date.today(),
+                                                                  font_file=self.TAHOMA_FONT_FILE_PATH)
         self._app.logger.debug("drawtext_string={}".format(drawtext_string))
         # ffmpeg_args = ['ffmpeg',
         #                '-y',
@@ -167,7 +167,6 @@ class Slate(object):
                        drawtext_string,
                        mov_path,
                        ]
-
 
         self._app.logger.debug("Trying {}".format(' '.join(ffmpeg_args)))
 
@@ -192,7 +191,7 @@ class Slate(object):
                     "text={text}:"
                     "fontcolor=white:"
                     "fontsize={font_scale}*h:"
-                    "fontfile=/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf:"
+                    "fontfile=\"{font_file}\":"
                     "x=w*0.125{x_offset}:"
                     "y=h*{y_offset}+{i}*{line_spacing},"
                     )
@@ -224,18 +223,19 @@ class Slate(object):
                                             line_spacing=spacing,
                                             x_offset=x_offset,
                                             y_offset=y_offset,
-                                            i=i)
+                                            i=i,
+                                            font_file=self.DEJAVUSANS_BOLD_FONT_FILE_PATH)
 
         return ffmpeg_stuff
 
     def _set_internal_slate_lines(self):
 
         internal_slate_lines = [
-            ("'Name\:\ '", "'{name}'".format(name=self.slate_data['project_name'])),
-            ("'Project ID\:\ '", "'{id}'".format(id=self.slate_data['project_id'])),
-            ("'Shot ID\:\ '", "'{id}'".format(id=self.slate_data['shot_id'])),
+            # ("'Project ID\:\ '", "'{id}'".format(id=self.slate_data['project_id'])),
+            # ("'Shot ID\:\ '", "'{id}'".format(id=self.slate_data['shot_id'])),
             ("'Shot Name\:\ '", "'{name}'".format(name=self.slate_data['shot_name'])),
-            ("'Version\:\ '", "'{version}'".format(version=self.slate_data['playblast_version'])),
+            ("'Projeact Name\:\ '", "'{name}'".format(name=self.slate_data['project_name'])),
+            ("'Version\:\ '", "'{version}'".format(version="V%s" % str(self.slate_data['playblast_version']).zfill(3))),
             ("'Frames\:\ '", "'{first}-{last} ({range}f)'"
              .format(first=self.pb_params['startTime'],
                      last=self.pb_params['endTime'],
@@ -243,11 +243,11 @@ class Slate(object):
             ("'Resolution\:\ '", "'{w}x{h}'".format(w=self.pb_params['width'],
                                                       h=self.pb_params['height'])),
             ("'Focal Length\:\ '", "'{focal}'".format(focal=self.slate_data['focal_length'])),
-            ("''", "''"),
+            # ("''", "''"),
             ("'Artist\:\ '", "'{artist}'".format(artist=self.slate_data['artist'])),
             ("'Date\:\ '", "'{date}'".format(date=datetime.date.today())),
             # ("'Time Log\:\ '", "'{time_log} hours'".format(time_log=self._time_log)),
-            ("''", "''"),
+            # ("''", "''"),
             # ("'Notes\:\ '", "'{notes}'".format(notes=comment)),
         ]
         return internal_slate_lines

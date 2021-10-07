@@ -90,6 +90,7 @@ class AppDialog(QtGui.QWidget):
         self.ui.sb_scale.setValue(1.0)
 
         self.ui.cb_resolution.currentTextChanged.connect(self._toggle_custom_res_type)
+        self.ui.sb_res_w.valueChanged.connect(self.resolution_width_changed)
         self.ui.cb_pass_type.currentTextChanged.connect(self._toggle_custom_pass_type)
         self.ui.cb_camera_type.currentTextChanged.connect(self._toggle_custom_camera_type)
         # self.ui.pb_cancel.released.connect(self.deleteLater)
@@ -140,6 +141,14 @@ class AppDialog(QtGui.QWidget):
 
     def show_status(self, title, message):
         self._app.engine.show_busy(title, message)
+
+    def resolution_width_changed(self):
+        width_value = int(self.ui.sb_res_w.value())
+        if 2048 < width_value:
+            self.ui.lbl_resolution_size_hint.show()
+            self.ui.lbl_resolution_size_hint.setStyleSheet("color: red")
+        else:
+            self.ui.lbl_resolution_size_hint.hide()
 
     def _toggle_custom_res_type(self, val):
         if val == 'From Viewport':
@@ -247,7 +256,10 @@ class AppDialog(QtGui.QWidget):
             context = self.pbMngr.get_context()
 
             # adding to resolutions
-            self._toggle_custom_res_type('From Viewport')
+            # self._toggle_custom_res_type('From Render Settings')
+            self.ui.cb_resolution.setCurrentText("From Render Settings")
+
+            self.resolution_width_changed()
 
             self._app.logger.debug(
                 "set_default_ui_data: playblast for {0}, {1}".format(context.entity, context.project))
