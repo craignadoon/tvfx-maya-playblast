@@ -20,8 +20,8 @@ if not ffmpeg:
 
 
 class Slate(object):
-    BLANK_SLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__).replace('/python/playblast',
-                                                                                      '/resources/track_slate.png')))
+    BLANK_SLATE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__).replace("\\", '/').
+                                                    replace('/python/playblast', '/resources/track_slate.png')))
     FONT_SCALE = 0.0090
     LINE_SPACING = 60
     LINE_LENGTH = 70
@@ -64,9 +64,12 @@ class Slate(object):
 
         proc = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
-        slate_path = self._match_resolution(slate_path, first_frame_path)
+
         self._app.logger.debug("stdout = {}".format(stdout))
         self._app.logger.debug("stderr = {}".format(stderr))
+        
+        slate_path = self._match_resolution(slate_path, first_frame_path)
+
         self._app.logger.debug("create_slate: slate_path (2) = {}".format(slate_path))
 
         return slate_path
