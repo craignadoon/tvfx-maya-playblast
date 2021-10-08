@@ -10,6 +10,8 @@
 
 # by importing QT from sgtk rather than directly, we ensure that
 # the code will be compatible with both PySide and PyQt.
+import glob
+
 import os
 import traceback
 import subprocess
@@ -66,24 +68,10 @@ class AppDialog(QtGui.QWidget):
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
-        # Status bar
-
-        # self.ui.statusBar.setObjectName(_fromUtf8("statusbar"))
-        # QtGui.QWidget.setStatusBar(self.ui.statusBar)
-        # self.setStatusBar(self.statusBar)
         self.ui.status_bar = QtGui.QStatusBar()
         self.ui.status_bar.setSizeGripEnabled(False)
-        # hbox_status_bar = QtGui.QHBoxLayout()
-        # hbox_status_bar.addStretch(1)
-        # hbox_status_bar.addWidget(self.ui.statusBar)
         self.ui.hl_control_layout_3.addWidget(self.ui.status_bar)
-        # self.ui.formLayout_3.layout().addLayout(hbox_status_bar)
-
-        # self.ui.status_bar.addPermanentWidget(QtGui.QLabel("message to right end"))
         self.ui.status_bar.showMessage('Ready to playblast', msecs=2000)
-
-        # Progress bar
-        # self.ui.progressBar.setValue(0)
 
         # --- add resolution presets
         self.ui.tb_resolution_preset.hide()
@@ -93,7 +81,6 @@ class AppDialog(QtGui.QWidget):
         self.ui.sb_res_w.valueChanged.connect(self.resolution_width_changed)
         self.ui.cb_pass_type.currentTextChanged.connect(self._toggle_custom_pass_type)
         self.ui.cb_camera_type.currentTextChanged.connect(self._toggle_custom_camera_type)
-        # self.ui.pb_cancel.released.connect(self.deleteLater)
         self.ui.le_pass_type_custom.setVisible(False)
         self.ui.le_camera_custom.setVisible(False)
 
@@ -115,10 +102,8 @@ class AppDialog(QtGui.QWidget):
         self._app.logger.info("Track's maya playblast")
 
         # lastly, set up our very basic UI
-        # self.ui.createPlayblast.clicked.connect(self.ui.progressBar)
         self.ui.createPlayblast.clicked.connect(self.do_playblast)
         self.ui.pb_cancel.clicked.connect(self._on_cancel)
-        # self.setHeight(380)
         self.resize(500, 250)
 
     def _on_cancel(self):
@@ -217,7 +202,6 @@ class AppDialog(QtGui.QWidget):
             self.ui.le_frame_start.setText(str(start_frame))
 
             self.ui.le_frame_end.setText(str(end_frame))
-            # self.ui.le_frame_end.setVisible(False)
 
             # getting default values for yaml file
             camera_type_value, pass_type, frame_padding, scale = self.pbMngr.get_defaults_values()
@@ -234,15 +218,11 @@ class AppDialog(QtGui.QWidget):
             self.ui.le_focal_length.setEnabled(False)
 
             # RESOLUTION : (hard coding for now)
-
             self.ui.sb_res_w.setValue(960)
             self.ui.sb_res_h.setValue(540)
 
             # FORMAT: default playblast format is set to movie as of now
             self.ui.cb_format.setCurrentIndex(0)
-
-            # disable avi format for now
-            # self.ui.cb_format.model().item(1).setEnabled(False)
 
             # pass type
             self.ui.cb_pass_type.setCurrentText(pass_type)
@@ -256,9 +236,7 @@ class AppDialog(QtGui.QWidget):
             context = self.pbMngr.get_context()
 
             # adding to resolutions
-            # self._toggle_custom_res_type('From Render Settings')
             self.ui.cb_resolution.setCurrentText("From Render Settings")
-
             self.resolution_width_changed()
 
             self._app.logger.debug(
@@ -307,17 +285,11 @@ class AppDialog(QtGui.QWidget):
             'forceOverwrite': True,
             'format': str(self.ui.cb_format.currentText()),
             'percent': float(self.ui.sb_scale.value()) * 100,
-            # 'compression': 'H.264',
-            # 'width': int(float(self.ui.sb_res_w.value())),
-            # 'height': int(float(self.ui.sb_res_h.value())),
             'width': width,
             'height': height,
 
             'offScreen': True if self.ui.checkBox.isChecked() else False,
-            # 'quality': 70,
-            # 'viewer': True,
             'framePadding': int(self.ui.sb_padding.value()),
-            # 'filename': maya_output,
             'filename': self.pbMngr.get_temp_output(extension),  # self.pbMngr.fofrmat_output_path(),
             'compression': encoding
         }
@@ -342,33 +314,32 @@ class AppDialog(QtGui.QWidget):
         logger.info(playblastParams)
         return playblastParams
 
+    def get_rv_path(self):
+        if os.name == 'nt':
+            paths = glob.glob(r'C:\Program Files\Shotgun\*\bin\rv.exe')
+        else:
+            paths = glob.glob('/opt/rv/*/bin/rv')
+
+        if paths:
+            paths.sort()
+            return paths[0]
+
+        return 'rv'
+
     def do_playblast(self):
         """
         method invoked when ui's playblast button is clicked
         :return:
         """
-        # msg = QtGui.QMessageBox()
-        # msg.setIcon(QtGui.QMessageBox.Information)
-        # msg.setWindowTitle("Playblast app messages")
-        # self.show_status('Playblast in progress..', 'Getting playblast out..')
         overridePlayblastParams = self.gatherUiData()
 
         # self.ui.status_bar.showMessage('User input gathered', msecs=2000)
         self.set_status('User input gathered')
         playblastFile, entity = self.pbMngr.createPlayblast(overridePlayblastParams)
-
-        # self._app.logger.info("Playblast created and uploaded to shotgun = {}".format(playblastFile))
-        # self._app.engine.clear_busy()
-        # msg.information(self, 'Playblast created', 'A New Version of playblast has been created.')
-
-        # msg.setInformativeText("Playblast created and uploaded to shotgun!")
-        # msg.setDetailedText("Playblast path: ".format(playblastFile))
-
-        QtGui.QMessageBox.information(self, 'Playblast created:', 'New Version: {}'.format(playblastFile))
+        QtGui.QMessageBox.information(self, 'Playblast created:',
+                                      'New Version: {}'.format(os.path.basename(playblastFile)))
         try:
-            bin = 'rv'
-            if os.path.exists('/opt/rv/rv-centos7-x86-64-7.6.1/bin/rv'):
-                bin = '/opt/rv/rv-centos7-x86-64-7.6.1/bin/rv'
+            bin = self.get_rv_path()
             subprocess.Popen([bin, '-play', playblastFile])
         except:
             pass

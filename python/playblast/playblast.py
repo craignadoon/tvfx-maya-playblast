@@ -46,9 +46,6 @@ class PlayblastManager(object):
 
         self.emitter = emitter or self._app.logger.info
 
-        # self.status("progress bar here")
-
-        # self._context = currentEngine.context
         if self._context is None:
             self._context = self._currentEngine.context
 
@@ -59,7 +56,6 @@ class PlayblastManager(object):
         self.description = None
         self.camera_type = None
         self.focal_length = None
-        # self.mayaOutputPath = self.get_temp_output()
         self.mayaOutputPath = None
         self.playblastPath = None
         self.playblast_mov_path = None
@@ -73,8 +69,6 @@ class PlayblastManager(object):
             'height': 540,
             'framePadding': 4,
             'format': 'avi',
-            # 'encoding': 'jpg',
-            # 'compression': 'None',
             'forceOverwrite': True,
             'showOrnaments': True,
             'clearCache': True,
@@ -157,17 +151,9 @@ class PlayblastManager(object):
         self.emitter('Gathering user inputs..')
 
         self.playblastParams.update(override_playblast_params)
-        # TODO: filename
-        self._app.logger.debug("&&&&& self.playblastParams():")
-        self._app.logger.debug(self.playblastParams)
-        # if not self.focus:
-        #     self.focus = True
-        # panel = self.get_current_panel()
-        # self._app.logger.debug("createPlayblast: panel = {}".format(panel))
-        # self._app.logger.debug("createPlayblast: self.pass_type = {}".format(self.pass_type))
-        # cmds.getPanel(withFocus=True)
-        # cmds.modelEditor(panel, edit=True, displayAppearance=self.pass_type)
-        self.emitter('Running playblast..!!!!!!!!!!!!!!')
+        self._app.logger.debug("Playblast params: {}".format(self.playblastParams))
+        self.emitter('Starting playblast process..')
+
         if self.camera_shape == 'perspShape':
             self.playblastParams['showOrnaments'] = False
         else:
@@ -192,7 +178,6 @@ class PlayblastManager(object):
             extension = "avi"
 
         self.playblastPath, playblast_version = self.format_output_path(extension)
-        # self.emitter('Getting latest version: {}'.format(playblast_version))
         self._app.logger.debug("formatted playblastPath = {}".format(self.playblastPath))
 
         if self.playblastParams['format'] == 'image':
@@ -207,7 +192,7 @@ class PlayblastManager(object):
         self._app.logger.debug(os.path.exists(self.mayaOutputPath))
 
         if file_ext == "avi":
-            result = shutil.copyfile(self.mayaOutputPath, self.playblastPath)
+            shutil.copyfile(self.mayaOutputPath, self.playblastPath)
         else:
             seq_name, hashes, ext = self.mayaOutputPath.split(".")
             padding = '.%0{}d.'.format(hashes.count('#'))
@@ -217,9 +202,13 @@ class PlayblastManager(object):
 
             for i, frame_num in enumerate(range(self.playblastParams['startTime'],
                                                 self.playblastParams['endTime'])):
-                result = shutil.copy(self.mayaOutputPath % frame_num, self.playblastPath % frame_num)
-            self._app.logger.debug("Image sequence copied to playblast path= {}".format(self.playblastPath))
-            self.emitter('Image sequence copied to playblast path: {}'.format(self.playblastPath))
+                source = self.mayaOutputPath % frame_num
+                dest = self.playblastPath % frame_num
+                self._app.logger.debug('Copying {} -> {}'.format(os.path.basename(source), dest))
+                shutil.copy(source, dest)
+
+            self.emitter("Playblast sequence copied to: {}".format(os.path.dirname(self.playblastPath)))
+
             # format the movie path as per template with mov extension
             self.playblastParams['format'] = "mov"
             self.playblast_mov_path, playblast_version = self.format_output_path('mov')
@@ -232,7 +221,7 @@ class PlayblastManager(object):
             ffmpeg_mov = self.slate.create_internal_mov(slate, self.playblastParams['startTime'])
             self._app.logger.debug("createPlayblast: ffmpeg_mov = {}".format(ffmpeg_mov))
 
-            result = shutil.copy(ffmpeg_mov, self.playblast_mov_path)
+            shutil.copy(ffmpeg_mov, self.playblast_mov_path)
 
             self._app.logger.debug("self.playblast_mov_path(ffmpeg movie) = {}".format(self.playblast_mov_path))
             pb_name, file_ext = os.path.basename(self.playblast_mov_path).split(".")
@@ -246,13 +235,13 @@ class PlayblastManager(object):
         return self.playblastPath, version_entity
 
     def get_resolution(self, res_w, res_h):
+        """Reformat resolution to be limited with 2k"""
         max_w = 2048
-        # res_w = 3072
-        # res_h = 1296
 
         if res_w > max_w:
             res_w = max_w
             res_h = max_w * res_h / res_w
+
         return res_w, res_h
 
     def get_current_panel(self):
@@ -260,26 +249,9 @@ class PlayblastManager(object):
         get current panel in focus for maya
         :return:
         """
-        # panel = cmds.getPanel(withFocus=True)
-        #
-        # if cmds.getPanel(typeOf=panel) != 'modelPanel':
-        #     # just get the first visible model panel we find, hopefully the correct one.
-        #     for p in cmds.getPanel(visiblePanels=True):
-        #         if cmds.getPanel(typeOf=p) == 'modelPanel':
-        #             panel = p
-        #             cmds.setFocus(panel)
-        #             break
-        #
-        # self._app.logger.debug("get_current_panel: panel = {}".format(panel))
-
-        # if cmds.getPanel(typeOf=panel) != 'modelPanel':
-        #     OpenMaya.MGlobal.displayWarning('Please highlight a camera viewport.')
-        #     return False
-        # self._app.logger.debug("get_current_panel: self.camera_type = {}".format(self.camera_type))
         self._app.logger.debug("get_current_panel: self.camera_type = {}".format(self.camera_type))
         cam_panel = self.get_panel_from_camera(self.camera_type)
         self._app.logger.debug("get_current_panel: cam_panel = {}".format(cam_panel))
-
         return cam_panel
 
     def get_panel_from_camera(self, camera_name):
@@ -321,7 +293,6 @@ class PlayblastManager(object):
         :return:
              publishPath: formatted output file path
         """
-
         # TODO: condn to check if its a shot context or not
         # TODO: warning if its not a shot context?
         # context = self.getContextInfo()
@@ -426,23 +397,11 @@ class PlayblastManager(object):
             raise Exception("The publisher is not configured for this context.")
         path_info = publisher.util.get_file_path_components(path)
         filename = path_info['filename']
-        # # VERSION_REGEX = r'v\s*([\d]+)'
-        # VERSION_REGEX = r'v(\d)+'
-        # version_pattern_match = re.search(VERSION_REGEX, os.path.basename(filename))
-        # if not version_pattern_match:
-        #     error_msg = "Not able to detect version from given path: %s" % filename
-        #     raise ValueError(error_msg)
-        # # found a version number, use the other groups to remove it
-        # x = version_pattern_match.group(0)
-        # prefix = version_pattern_match.group(1)
-        # extension = version_pattern_match.group(4) or ""
-        # TODO:replace string manipulations with a regex to extract filename without version and extension
         self._app.logger.debug("filename = {0}".format(filename))
         if self.playblastParams.get('format') == 'image':
             name, padding, extension = filename.rsplit('.')
         else:
             name, extension = filename.rsplit('.')
-        # self._app.logger.debug("get_playblast_ver:extension={0}, prefix = {1}, x ={2} ".format(extension, prefix, x))
         self._app.logger.debug("filename = {0}, name = {1}".format(filename, name[:-5]))
 
         # build filters now
@@ -460,18 +419,6 @@ class PlayblastManager(object):
             )
 
         self._app.logger.debug("get_playblast_ver: filters = {}".format(filters))
-
-        # Run a Shotgun API query to summarize the maximum version number on PublishedFiles that
-        # are linked to the task and match the provided name.
-        # Since PublishedFiles generated by the Publish app have the extension on the end of the name we need to add the
-        # extension in our filter.
-
-        # r = self._currentEngine.shotgun.summarize(entity_type="PublishedFile",
-        #                                           filters=filters,
-        #                                           # [["task", "is", {"type": "Task", "id": self._context.task["id"]}],
-        #                                           #     ["name", "is", fields["name"] + ".avi"]],
-        #                                           summary_fields=[{"field": "version_number", "type": "maximum"}])
-        # publish_version = r["summaries"]["version_number"] + 1
 
         available_records = publisher.sgtk.shotgun.find_one(
             entity_type='PublishedFile',
@@ -560,29 +507,6 @@ class PlayblastManager(object):
         self._app.logger.debug("plate_names = {}".format(plate_names))
         return plate_names[0]
 
-    # def create_version_entity(self, publish_name):
-    #     self.emitter('Creating version entity')
-    #     playblast_version_entity = self._context.sgtk.shotgun.create(
-    #         'Version',
-    #         {
-    #             'code': publish_name,
-    #             # 'code': os.path.splitext(os.path.basename(movie_path))[0],
-    #             'entity': self._context.entity,
-    #             'project': self._context.project,
-    #             'user': self._context.user,
-    #             'description': self.description,  # 'Version creation from playblast tool',
-    #             'sg_path_to_movie': self.playblastPath,
-    #             # 'sg_path_to_frames': str(published_plate),
-    #             'sg_version_type': 'Artist Version',
-    #         }
-    #     )
-    #     self._context.sgtk.shotgun.upload(
-    #         'Version', playblast_version_entity['id'], self.playblastPath, 'sg_uploaded_movie'
-    #     )
-    #     self._app.logger.debug('version_entity: {}', playblast_version_entity)
-    #
-    #     return playblast_version_entity
-    #
     def upload_to_shotgun(self, publish_name, version_number):
         """
         To upload the playblast img seq/movie to shotgun
@@ -604,13 +528,12 @@ class PlayblastManager(object):
             'Version',
             {
                 'code': publish_name,
-                # 'code': os.path.splitext(os.path.basename(movie_path))[0],
                 'entity': self._context.entity,
                 'project': self._context.project,
                 'user': self._context.user,
                 'description': self.description,  # 'Version creation from playblast tool',
                 'sg_path_to_movie': movie_to_upload,
-                # 'sg_path_to_frames': str(published_plate),
+                'sg_path_to_frames': self.playblastPath,
                 'sg_version_type': 'Artist Version',
             }
         )
@@ -655,21 +578,21 @@ class PlayblastManager(object):
         """
         Return an int of the current frame rate
         """
-        currentUnit = cmds.currentUnit(query=True, time=True)
-        if currentUnit == 'film':
+        fps = cmds.currentUnit(query=True, time=True)
+        if fps == 'film':
             return 24
-        if currentUnit == 'show':
+        if fps == 'show':
             return 48
-        if currentUnit == 'pal':
+        if fps == 'pal':
             return 25
-        if currentUnit == 'ntsc':
+        if fps == 'ntsc':
             return 30
-        if currentUnit == 'palf':
+        if fps == 'palf':
             return 50
-        if currentUnit == 'ntscf':
+        if fps == 'ntscf':
             return 60
-        if 'fps' in currentUnit:
-            return int(currentUnit.substitute('fps', ''))
+        if 'fps' in fps:
+            return float(fps.replace('fps', ''))
 
         return 1
 

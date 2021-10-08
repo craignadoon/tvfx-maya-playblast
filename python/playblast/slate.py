@@ -98,43 +98,10 @@ class Slate(object):
         shotname = self.slate_data['shot_name']
         project = self.slate_data['project_name']
 
-        # ffmpeg_args = ['ffmpeg',
-        #                '-y',
-        #                '-start_number', str(first),
-        #                # '-framerate', str(frame_rate),
-        #                '-filter_complex',
-        #                'pad=ceil(iw/2)*2:ceil(ih/2)*2,'
-        #                'drawtext='
-        #                'start_number={first}:'
-        #                'text=FrameNo-%{n}__{focal}mm__{cam}_Camera:'
-        #                'fontcolor=white:'
-        #                'fontsize=0.025*h:'
-        #                'x=w*0.975-text_w:'
-        #                'y=h*0.95'.format(first=first, n='{n}', focal=focal, cam=camera),
-        #                '-i', self.pb_path,
-        #                mov_path,
-        #                ]
-
-        # drawtext_string = ("drawtext=start_number=1001:"
-        #                    "fontfile=C:\Windows\Fonts\Calibri.ttf:text='%%{n}':"
-        #                    "x=w*0.98-text_w:y=h*0.92:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.4,"
-        #                    "drawtext=fontfile=C:\Windows\Fonts\Calibri.ttf:start_number=1001:text='35mm':"
-        #                    "x=w*0.98-text_w:y=h*0.88:fontsize=14:fontcolor=white:box=1:boxcolor=black@0.4,"
-        #                    "drawtext=fontfile=C:\Windows\Fonts\Tahoma.ttf:text='DBR_110_007_666_cam_122f':"
-        #                    "x=w*0.35:y=h*0.92:fontsize=16:fontcolor=white:box=1:boxcolor=black@0.4,"
-        #                    "drawtext=fontfile=C:\Windows\Fonts\Tahoma.ttf:text='redf_emerald_hill':"
-        #                    "x=w*0.42:y=h*0.02:fontsize=16:fontcolor=white:box=1:boxcolor=black@0.4,"
-        #                    "drawtext=fontfile=C:\Windows\Fonts\Calibri.ttf:text='artistname':"
-        #                    "x=w*0.02:y=h*0.92:fontsize=16:fontcolor=white:box=1:boxcolor=black@0.4,"
-        #                    "drawtext=text='2021-04-23':x=w*0.90:y=h*0.02:"
-        #                    "fontsize=16:fontcolor=white:box=1:boxcolor=black@0.4").format()
-        # drawtext_string = ("select='not(eq(n\,{first})',drawtext=start_number={first}:"
-        # drawtext_string = ("select='not(n=0)',drawtext=start_number={first}:"
-        drawtext_string = ("select='gte(n\,0)',drawtext=start_number={first}:"
+        drawtext_string = ("pad=ceil(iw/2)*2:ceil(ih/2)*2,"
+                           "select='gte(n\,0)',drawtext=start_number={first}:"
                            "fontfile={font_file}:text='%{n}':"
                            "x=w*0.98-text_w:y=h*0.92:fontsize=20:fontcolor=DAF7A6,"
-                           # "drawtext=fontfile=C:\Windows\Fonts\Calibri.ttf:start_number={first}:text='{focal}mm':" 
-                           # "x=w*0.98-text_w:y=h*0.88:fontsize=14:fontcolor=white,"
                            "drawtext=fontfile={font_file}:text='{shotname}':"
                            "x=w*0.50:y=h*0.92:fontsize=16:fontcolor=DAF7A6,"
                            "drawtext=fontfile={font_file}:text='{project}':"
@@ -149,21 +116,11 @@ class Slate(object):
                                                                   camera=camera, date_time=datetime.date.today(),
                                                                   font_file=self.TAHOMA_FONT_FILE_PATH)
         self._app.logger.debug("drawtext_string={}".format(drawtext_string))
-        # ffmpeg_args = ['ffmpeg',
-        #                '-y',
-        #                '-start_number', str(first),
-        #                '-i', self.pb_path,
-        #                '-vf',
-        #                drawtext_string,
-        #                mov_path,
-        #                ]
         ffmpeg_args = [ffmpeg,
                        '-y',
                        '-start_number', str(first),
                        '-i', self.pb_path,
                        '-vf',
-                       # 'select = "gte(n\, 1)"',
-                       # 'select = "not(eq(n\,3)"',
                        drawtext_string,
                        mov_path,
                        ]
