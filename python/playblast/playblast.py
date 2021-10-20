@@ -196,7 +196,17 @@ class PlayblastManager(object):
         else:
             seq_name, hashes, ext = self.mayaOutputPath.split(".")
             padding = '.%0{}d.'.format(hashes.count('#'))
+            self.playblastParams['format'] = "mov"
+            self.playblast_mov_path, playblast_version = self.format_output_path('mov')
+            self.emitter('Getting latest version: {}'.format(playblast_version))
+
             self.mayaOutputPath = str(seq_name + padding + ext)
+
+            self.playblastPath = os.path.join(os.path.dirname(self.playblast_mov_path), '.source',
+                                              os.path.basename(self.playblastPath)).replace("\\", '/')
+            if not os.path.exists(os.path.dirname(self.playblastPath)):
+                os.makedirs(os.path.dirname(self.playblastPath))
+
             self._app.logger.debug("self.mayaOutputPath after formatting = {}".format(self.mayaOutputPath))
             self._app.logger.debug("seq_name= {0}, hashes= {1}, ext = {2}".format(seq_name, hashes, ext))
 
@@ -210,9 +220,9 @@ class PlayblastManager(object):
             self.emitter("Playblast sequence copied to: {}".format(os.path.dirname(self.playblastPath)))
 
             # format the movie path as per template with mov extension
-            self.playblastParams['format'] = "mov"
-            self.playblast_mov_path, playblast_version = self.format_output_path('mov')
-            self.emitter('Getting latest version: {}'.format(playblast_version))
+            # self.playblastParams['format'] = "mov"
+            # self.playblast_mov_path, playblast_version = self.format_output_path('mov')
+            # self.emitter('Getting latest version: {}'.format(playblast_version))
             self.playblastParams['format'] = "image"
 
             # Create slate
@@ -531,12 +541,24 @@ class PlayblastManager(object):
                 'entity': self._context.entity,
                 'project': self._context.project,
                 'user': self._context.user,
-                'description': self.description,  # 'Version creation from playblast tool',
+                # 'description': self.description,  # 'Version creation from playblast tool',
                 'sg_path_to_movie': movie_to_upload,
                 'sg_path_to_frames': self.playblastPath,
                 'sg_version_type': 'Artist Version',
             }
         )
+
+        self._context.sgtk.shotgun.create(
+            'Note',
+            data={
+                'note_links': [self._context.entity, playblast_version_entity] or None,
+                'project': self._context.project,
+                'subject': 'Playblast from {}'.format(os.path.basename(movie_to_upload)),
+                'content': self.description,
+                'sg_note_type': 'Internal'
+            }
+        )
+
         self._context.sgtk.shotgun.upload(
             'Version', playblast_version_entity['id'], movie_to_upload, 'sg_uploaded_movie'
         )
@@ -549,7 +571,7 @@ class PlayblastManager(object):
             movie_to_upload,
             publish_name,
             version_number,
-            comment=self.description,
+            # comment=self.description,
             published_file_type=self.publish_type,
             version_entity=playblast_version_entity
         )

@@ -13,6 +13,8 @@
 import glob
 
 import os
+import sys
+import tabulate
 import traceback
 import subprocess
 from functools import partial
@@ -46,6 +48,11 @@ def show_dialog(app_instance, version_str='0.0.1'):
 
     # we pass the dialog class to this method and leave the actual construction
     # to be carried out by toolkit.
+    _app = sgtk.platform.current_bundle()
+    if not _app.context.entity:
+        QtGui.QMessageBox.warning(None, 'Task Context not Found!!',
+                                  'Kindly open file from Shotgrid menu!!!!!!!!!!!!')
+        return
     AppDialog.__version__ = version_str
     app_instance.engine.show_dialog("Maya Playblast - v{}".format(version_str),  # window title
                                     app_instance,  # playblast instance
@@ -78,7 +85,7 @@ class AppDialog(QtGui.QWidget):
         self.ui.sb_scale.setValue(1.0)
 
         self.ui.cb_resolution.currentTextChanged.connect(self._toggle_custom_res_type)
-        self.ui.sb_res_w.valueChanged.connect(self.resolution_width_changed)
+        # self.ui.sb_res_w.valueChanged.connect(self.resolution_width_changed)
         self.ui.cb_pass_type.currentTextChanged.connect(self._toggle_custom_pass_type)
         self.ui.cb_camera_type.currentTextChanged.connect(self._toggle_custom_camera_type)
         self.ui.le_pass_type_custom.setVisible(False)
@@ -92,10 +99,18 @@ class AppDialog(QtGui.QWidget):
         # - A Shotgun API instance, via self._app.shotgun
         # - A tk API instance, via self._app.tk
         self._app = sgtk.platform.current_bundle()
+
+        # if not self._app.context.entity:
+        #     QtGui.QMessageBox.warning(self, 'Task Context not Found!!',
+        #                               'Kindly open file from Shotgrid menu!!!!!!!!!!!!')
+        #     self.destroy_app()
+            # return
+            # self.close()
         self.context = None
 
         # self.pbMngr = PlayblastManager(self._app, self.context, partial(self.set_status, 2000))
-        self.pbMngr = PlayblastManager(self._app, self.context, self.set_status)
+        # self.pbMngr = PlayblastManager(self._app, self.context, self.set_status)
+        self.pbMngr = PlayblastManager(self._app, self.context)
         self.set_default_ui_data()
 
         # logging happens via a standard toolkit logger
@@ -104,7 +119,39 @@ class AppDialog(QtGui.QWidget):
         # lastly, set up our very basic UI
         self.ui.createPlayblast.clicked.connect(self.do_playblast)
         self.ui.pb_cancel.clicked.connect(self._on_cancel)
+        self.ui.pb_refresh.clicked.connect(self._on_pb_refresh)
+        self.ui.sb_scale.valueChanged.connect(self._on_sb_change)
+        self.ui.cb_auto.stateChanged.connect(self._on_cb_auto_change)
+        self.ui.createPlayblast.setFocus()
         self.resize(500, 250)
+        self._on_cb_auto_change()
+
+    def _on_cb_auto_change(self):
+        if self.ui.cb_auto.isChecked():
+            width_value = int(self.ui.sb_res_w.value())
+            scale_value = float(2048.0 / width_value)
+
+            self.ui.sb_scale.setValue(scale_value)
+            self.ui.sb_scale.setEnabled(0)
+        else:
+            self.ui.sb_scale.setEnabled(1)
+
+    def _on_sb_change(self):
+        width_value = int(self.ui.sb_res_w.value())
+        actual_width = float(self.ui.sb_scale.value()) * width_value
+        if 2048 < actual_width:
+            self.ui.lbl_resolution_size_hint.show()
+            self.ui.lbl_resolution_size_hint.setStyleSheet("color: red")
+        else:
+            self.ui.lbl_resolution_size_hint.hide()
+
+    def _on_pb_refresh(self):
+        val = str(self.ui.cb_resolution.currentText())
+        if val == 'From Render Settings':
+            w, h = self._get_maya_render_resolution()
+            self.ui.sb_res_w.setValue(w)
+            self.ui.sb_res_h.setValue(h)
+            self._on_cb_auto_change()
 
     def _on_cancel(self):
         """
@@ -140,14 +187,19 @@ class AppDialog(QtGui.QWidget):
             w, h = self._get_maya_window_resolution()
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
+            self.ui.pb_refresh.hide()
+            self.ui.cb_auto.hide()
         elif val == 'From Render Settings':
             w, h = self._get_maya_render_resolution()
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
-
+            self.ui.pb_refresh.show()
+            self.ui.cb_auto.show()
         if val == 'Custom':
             self.ui.sb_res_w.setEnabled(True)
             self.ui.sb_res_h.setEnabled(True)
+            self.ui.pb_refresh.hide()
+            self.ui.cb_auto.hide()
         else:
             self.ui.sb_res_w.setEnabled(False)
             self.ui.sb_res_h.setEnabled(False)
@@ -185,8 +237,9 @@ class AppDialog(QtGui.QWidget):
         else:
             w = self.ui.sb_res_w.value()
             h = self.ui.sb_res_h.value()
-        if 2048 < int(w):
-            w, h = self.pbMngr.get_resolution(w, h)
+        # auto_crop = True if self.ui.cb_auto.isChecked() else False
+        # if 2048 < int(w) and auto_crop:
+        #     w, h = self.pbMngr.get_resolution(w, h)
         return w, h
 
     def set_default_ui_data(self):
@@ -226,7 +279,7 @@ class AppDialog(QtGui.QWidget):
 
             # pass type
             self.ui.cb_pass_type.setCurrentText(pass_type)
-            self.pbMngr.set_pass_type(str(self.ui.cb_pass_type.currentText()))
+            self.pbMngr.set_pass_type(str(self.ui.cb_pass_type.currentText()).lower())
 
             # camera type
             self.ui.cb_camera_type.setCurrentText(camera_type_value)
@@ -237,7 +290,7 @@ class AppDialog(QtGui.QWidget):
 
             # adding to resolutions
             self.ui.cb_resolution.setCurrentText("From Render Settings")
-            self.resolution_width_changed()
+            # self.resolution_width_changed()
 
             self._app.logger.debug(
                 "set_default_ui_data: playblast for {0}, {1}".format(context.entity, context.project))
@@ -260,7 +313,7 @@ class AppDialog(QtGui.QWidget):
         if pass_type == 'Custom':
             pass_type = self.ui.le_pass_type_custom.text()
 
-        return pass_type
+        return str(pass_type).lower()
 
     def gatherUiData(self):
         """
@@ -297,9 +350,20 @@ class AppDialog(QtGui.QWidget):
         self.pbMngr.set_camera_type(self.camera_type)
         self.pbMngr.set_focal_length(self.ui.le_focal_length.text())
 
-        description = 'FocalLength: {}, PassType: {}, CameraType: {}, Comments: {}'.format(
-            self.ui.le_focal_length.text(), self.pass_type, self.camera_type, self.ui.le_comments.text()
-        )
+        # description = 'FocalLength: {},\n PassType: {},\n CameraType: {},\n Comments: {}\n'.format(
+        #     self.ui.le_focal_length.text(), self.pass_type, self.camera_type, self.ui.le_comments.text()
+        # )
+
+        description = 'Playblast Data:\n\n{}'.format(tabulate.tabulate(
+            [
+                ("FocalLength", str(self.ui.le_focal_length.text())),
+                ("PassType", str(self.pass_type)),
+                ("CameraType", str(self.camera_type)),
+                ("Comments", str(self.ui.le_comments.text())),
+                ("Percent", float(self.ui.sb_scale.value()) * 100)
+
+            ],
+            headers=['Data', 'Value'], tablefmt='pipe', colalign=('right', 'left')))
         self.pbMngr.set_description(description)
         self.pbMngr.upload_to_sg = True if self.ui.cb_upload_sg.isChecked() else False
 
@@ -331,11 +395,16 @@ class AppDialog(QtGui.QWidget):
         method invoked when ui's playblast button is clicked
         :return:
         """
+        if self.ui.le_comments.text() == "":
+            QtGui.QMessageBox.warning(self, 'comments error', 'Play blast Comment should be mandatory')
+            return
+
         overridePlayblastParams = self.gatherUiData()
 
         # self.ui.status_bar.showMessage('User input gathered', msecs=2000)
-        self.set_status('User input gathered')
+        self.set_status('Play blast in process')
         playblastFile, entity = self.pbMngr.createPlayblast(overridePlayblastParams)
+        self.set_status('')
         QtGui.QMessageBox.information(self, 'Playblast created:',
                                       'New Version: {}'.format(os.path.basename(playblastFile)))
         try:

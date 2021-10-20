@@ -70,6 +70,26 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="pb_refresh">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>30</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/res/refresh.png</normaloff>:/res/refresh.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QToolButton" name="tb_resolution_preset">
           <property name="text">
            <string>...</string>
@@ -159,6 +179,16 @@
           </property>
           <property name="value">
            <double>0.500000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="cb_auto">
+          <property name="text">
+           <string>Auto</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -498,7 +528,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Playblast!</string>
+        <string>Playblast</string>
        </property>
       </widget>
      </item>

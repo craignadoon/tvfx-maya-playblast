@@ -8,10 +8,37 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+import os
+import sys
 
+import sgtk
 from sgtk.platform import Application
 
+logger = sgtk.platform.get_logger(__name__)
+
 __version__ = '0.0.03'
+
+_third_mapping = {
+    'nt': 'windows',
+    'posix': 'linux'
+}
+
+resources_path = os.path.abspath(os.path.join(
+    os.path.abspath(__file__),
+    os.pardir,  # app location
+    'resources'))
+
+third_party = os.path.abspath(os.path.join(
+    resources_path,
+    'third-party',
+    _third_mapping[os.name]
+))
+
+
+for sys_path in [third_party]:
+    logger.info('Adding {} into sys.path'.format(sys_path))
+    if sys_path not in sys.path:
+        sys.path.append(sys_path)
 
 
 class PlayblastBase(Application):
