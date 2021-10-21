@@ -16,7 +16,7 @@ from sgtk.platform import Application
 
 logger = sgtk.platform.get_logger(__name__)
 
-__version__ = '0.0.03'
+__version__ = '0.0.04'
 
 _third_mapping = {
     'nt': 'windows',
