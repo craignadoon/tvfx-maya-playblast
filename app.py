@@ -68,5 +68,5 @@ class PlayblastBase(Application):
                                                                __version__)
 
         # now register the command with the engine
-        self.engine.register_command("Maya Playblast...",
+        self.engine.register_command(self.get_setting("name", "Playblast..."),
                                      menu_callback)
