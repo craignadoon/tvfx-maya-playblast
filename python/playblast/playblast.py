@@ -154,7 +154,7 @@ class PlayblastManager(object):
         self._app.logger.debug("Playblast params: {}".format(self.playblastParams))
         self.emitter('Starting playblast process..')
 
-        if self.camera_shape == 'perspShape':
+        if 'perspShape' in self.camera_shape:
             self.playblastParams['showOrnaments'] = False
         else:
             self.playblastParams['showOrnaments'] = True
@@ -194,7 +194,9 @@ class PlayblastManager(object):
         if file_ext == "avi":
             shutil.copyfile(self.mayaOutputPath, self.playblastPath)
         else:
-            seq_name, hashes, ext = self.mayaOutputPath.split(".")
+            dir_path = os.path.dirname(self.mayaOutputPath)
+            base_seq_name, hashes, ext = os.path.basename(self.mayaOutputPath).split(".")
+            seq_name = os.path.join(dir_path, base_seq_name).replace("\\", "/")
             padding = '.%0{}d.'.format(hashes.count('#'))
             self.playblastParams['format'] = "mov"
             self.playblast_mov_path, playblast_version = self.format_output_path('mov')
@@ -619,7 +621,7 @@ class PlayblastManager(object):
         return 1
 
     def get_focal_length_min_max(self):
-        if self.camera_shape == 'perspShape':
+        if 'perspShape' in self.camera_shape:
             return "NA"
         key_values = cmds.keyframe('%s.focalLength' % self.camera_shape, q=True, vc=True)
         if key_values and len(key_values) > 1:
