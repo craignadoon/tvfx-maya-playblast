@@ -125,12 +125,14 @@ class AppDialog(QtGui.QWidget):
         self.ui.createPlayblast.setFocus()
         self.resize(500, 250)
         self._on_cb_auto_change()
+        self._on_sb_change()
 
     def _on_cb_auto_change(self):
         if self.ui.cb_auto.isChecked():
             width_value = int(self.ui.sb_res_w.value())
             scale_value = float(2048.0 / width_value)
-
+            if scale_value != round(scale_value, 2):
+                scale_value = scale_value - 0.01
             self.ui.sb_scale.setValue(scale_value)
             self.ui.sb_scale.setEnabled(0)
         else:
@@ -396,7 +398,7 @@ class AppDialog(QtGui.QWidget):
         :return:
         """
         if self.ui.le_comments.text() == "":
-            QtGui.QMessageBox.warning(self, 'comments error', 'Play blast Comment should be mandatory')
+            QtGui.QMessageBox.warning(self, 'comments error', 'Comment should be mandatory')
             return
 
         overridePlayblastParams = self.gatherUiData()
