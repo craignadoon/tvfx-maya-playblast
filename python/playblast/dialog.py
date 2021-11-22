@@ -50,8 +50,7 @@ def show_dialog(app_instance, version_str='0.0.1'):
     # to be carried out by toolkit.
     _app = sgtk.platform.current_bundle()
     if not _app.context.entity:
-        QtGui.QMessageBox.warning(None, 'Task Context not Found!!',
-                                  'Kindly open file from Shotgrid menu!!!!!!!!!!!!')
+        QtGui.QMessageBox.warning(None, 'Task Context not Found!!',  'Open/Save file from SG!!!!!!!!!!!!')
         return
     AppDialog.__version__ = version_str
     app_instance.engine.show_dialog("Maya Playblast - v{}".format(version_str),  # window title
@@ -111,6 +110,7 @@ class AppDialog(QtGui.QWidget):
         # self.pbMngr = PlayblastManager(self._app, self.context, partial(self.set_status, 2000))
         # self.pbMngr = PlayblastManager(self._app, self.context, self.set_status)
         self.pbMngr = PlayblastManager(self._app, self.context)
+        self.is_anamorphic = False
         self.set_default_ui_data()
 
         # logging happens via a standard toolkit logger
@@ -151,6 +151,9 @@ class AppDialog(QtGui.QWidget):
         val = str(self.ui.cb_resolution.currentText())
         if val == 'From Render Settings':
             w, h = self._get_maya_render_resolution()
+            if self.is_anamorphic:
+                aspect_ratio = float(w / h)
+                h = float(h / aspect_ratio)
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
             self._on_cb_auto_change()
@@ -187,12 +190,18 @@ class AppDialog(QtGui.QWidget):
     def _toggle_custom_res_type(self, val):
         if val == 'From Viewport':
             w, h = self._get_maya_window_resolution()
+            if self.is_anamorphic:
+                aspect_ratio = float(w / h)
+                h = float(h / aspect_ratio)
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
             self.ui.pb_refresh.hide()
             self.ui.cb_auto.hide()
         elif val == 'From Render Settings':
             w, h = self._get_maya_render_resolution()
+            if self.is_anamorphic:
+                aspect_ratio = float(w / h)
+                h = float(h / aspect_ratio)
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
             self.ui.pb_refresh.show()
@@ -251,7 +260,7 @@ class AppDialog(QtGui.QWidget):
         """
         try:
             # FRAME RANGE: from maya scene
-            start_frame, end_frame = self.pbMngr.get_frame_range()
+            start_frame, end_frame, self.is_anamorphic = self.pbMngr.get_frame_range()
             self._app.logger.info("set_default_ui_data: start_frame, end_frame = {0}, {1}".format(start_frame,
                                                                                                   end_frame))
             self.ui.le_frame_start.setText(str(start_frame))

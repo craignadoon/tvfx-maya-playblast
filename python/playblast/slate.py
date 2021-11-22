@@ -25,9 +25,9 @@ class Slate(object):
     BLANK_SLATE_PATH = os.path.abspath(BASE_DIR.replace('/python/playblast', '/resources/track_slate.png'))
     TAHOMA_FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/tahoma.ttf')
     DEJAVUSANS_BOLD_FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/DejaVuSans-Bold.ttf')
-    FONT_SCALE = 0.0090
-    LINE_SPACING = 60
-    LINE_LENGTH = 70
+    FONT_SCALE = 0.013
+    LINE_SPACING = 70
+    LINE_LENGTH = 90
 
     def __init__(self, app, playblastParams, playblast_path, focal_length):
         """
@@ -98,23 +98,30 @@ class Slate(object):
         shotname = self.slate_data['shot_name']
         project = self.slate_data['project_name']
 
+        if self.pb_params['width'] > 2048:
+            font_size = round(self.pb_params['width']/100)
+        else:
+            font_size = 18
+
         drawtext_string = ("pad=ceil(iw/2)*2:ceil(ih/2)*2,"
                            "select='gte(n\,0)',drawtext=start_number={first}:"
                            "fontfile={font_file}:text='%{n}':"
-                           "x=w*0.98-text_w:y=h*0.92:fontsize=20:fontcolor=DAF7A6,"
+                           "x=w*0.98-text_w:y=h*0.92:fontsize={font_size}+2:fontcolor=DAF7A6,"
                            "drawtext=fontfile={font_file}:text='{shotname}':"
-                           "x=w*0.50:y=h*0.92:fontsize=16:fontcolor=DAF7A6,"
+                           "x=w*0.50:y=h*0.92:fontsize={font_size}:fontcolor=DAF7A6,"
                            "drawtext=fontfile={font_file}:text='{project}':"
-                           "x=w*0.50:y=h*0.02:fontsize=16:fontcolor=DAF7A6,"
+                           "x=w*0.50:y=h*0.02:fontsize={font_size}:fontcolor=DAF7A6,"
                            "drawtext=fontfile={font_file}:text='{artist}':"
-                           "x=w*0.02:y=h*0.92:fontsize=16:fontcolor=DAF7A6," 
+                           "x=w*0.02:y=h*0.92:fontsize={font_size}:fontcolor=DAF7A6," 
                            "drawtext=fontfile={font_file}:text='{camera}':"
-                           "x=w*0.02:y=h*0.02:fontsize=16:fontcolor=DAF7A6," 
-                           "drawtext=text='{date_time}':x=w*0.90:y=h*0.02:"
-                           "fontsize=16:fontcolor=DAF7A6").format(first=first, n='{n}', focal=focal,
-                                                                  project=project, shotname=shotname, artist=artist,
-                                                                  camera=camera, date_time=datetime.date.today(),
-                                                                  font_file=self.TAHOMA_FONT_FILE_PATH)
+                           "x=w*0.02:y=h*0.02:fontsize={font_size}:fontcolor=DAF7A6," 
+                           "drawtext=text='{date_time}':x=w*0.98-text_w:y=h*0.02:"
+                           "fontsize={font_size}:fontcolor=DAF7A6").format(first=first, n='{n}', focal=focal,
+                                                                           project=project, shotname=shotname,
+                                                                           artist=artist, camera=camera,
+                                                                           date_time=datetime.date.today(),
+                                                                           font_file=self.TAHOMA_FONT_FILE_PATH,
+                                                                           font_size=font_size)
         self._app.logger.debug("drawtext_string={}".format(drawtext_string))
         ffmpeg_args = [ffmpeg,
                        '-y',
@@ -149,7 +156,7 @@ class Slate(object):
                     "fontcolor=white:"
                     "fontsize={font_scale}*h:"
                     "fontfile=\"{font_file}\":"
-                    "x=w*0.125{x_offset}:"
+                    "x=w*0.18{x_offset}:"
                     "y=h*{y_offset}+{i}*{line_spacing},"
                     )
 
@@ -191,7 +198,7 @@ class Slate(object):
             # ("'Project ID\:\ '", "'{id}'".format(id=self.slate_data['project_id'])),
             # ("'Shot ID\:\ '", "'{id}'".format(id=self.slate_data['shot_id'])),
             ("'Shot Name\:\ '", "'{name}'".format(name=self.slate_data['shot_name'])),
-            ("'Projeact Name\:\ '", "'{name}'".format(name=self.slate_data['project_name'])),
+            ("'Project Name\:\ '", "'{name}'".format(name=self.slate_data['project_name'])),
             ("'Version\:\ '", "'{version}'".format(version="V%s" % str(self.slate_data['playblast_version']).zfill(3))),
             ("'Frames\:\ '", "'{first}-{last} ({range}f)'"
              .format(first=self.pb_params['startTime'],

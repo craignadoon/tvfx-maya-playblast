@@ -51,7 +51,7 @@ class PlayblastManager(object):
 
         self._app.logger.info("Playblast self._context = {}".format(self._context))
 
-        self.publish_type = "Playblast"
+        self.publish_type = "playblast"
         self.pass_type = None
         self.description = None
         self.camera_type = None
@@ -132,12 +132,14 @@ class PlayblastManager(object):
         self.emitter("self._context.entity = {}".format(self._context.entity))
         shot_info = self._context.sgtk.shotgun.find_one(self._context.entity['type'],
                                                         [['id', 'is', self._context.entity['id']]],
-                                                        ['sg_head_in', 'sg_tail_out'])
+                                                        ['sg_head_in', 'sg_tail_out', 'sg_original_pixel_aspect_ratio'])
         start_frame = int(shot_info['sg_head_in'] or start)
         last_frame = int(shot_info['sg_tail_out'] or end)
-        self._app.logger.debug("get_frame_range(): start, end frame = {0}, {1}".format(start_frame, last_frame))
+        is_anamorphic = True if float(shot_info['sg_original_pixel_aspect_ratio']) in (2, 2.0) else False
+        self._app.logger.debug("get_frame_range(): start, end frame = {0}, {1}, {2}".format(start_frame, last_frame,
+                                                                                            is_anamorphic))
 
-        return start_frame, last_frame
+        return start_frame, last_frame, is_anamorphic
 
     def createPlayblast(self, override_playblast_params):
         """
