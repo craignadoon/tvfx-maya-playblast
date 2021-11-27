@@ -122,10 +122,30 @@ class AppDialog(QtGui.QWidget):
         self.ui.pb_refresh.clicked.connect(self._on_pb_refresh)
         self.ui.sb_scale.valueChanged.connect(self._on_sb_change)
         self.ui.cb_auto.stateChanged.connect(self._on_cb_auto_change)
+        self.ui.cb_anamorphic.stateChanged.connect(self._on_cb_anamorphic_change)
         self.ui.createPlayblast.setFocus()
         self.resize(500, 250)
         self._on_cb_auto_change()
         self._on_sb_change()
+
+    def _on_cb_anamorphic_change(self):
+        print("self.ui.cb_anamorphic.isChecked()", self.ui.cb_anamorphic.isChecked())
+        if self.ui.cb_anamorphic.isChecked():
+            self.is_anamorphic = True
+        else:
+            self.is_anamorphic = False
+
+        val = str(self.ui.cb_resolution.currentText())
+        if val == 'From Render Settings':
+            w, h = self._get_maya_render_resolution()
+            if self.is_anamorphic:
+                aspect_ratio = float(w) / float(h)
+                print(aspect_ratio)
+                h = float(h / aspect_ratio)
+            self.ui.sb_res_w.setValue(w)
+            self.ui.sb_res_h.setValue(h)
+            self._on_cb_auto_change()
+            print(w, h)
 
     def _on_cb_auto_change(self):
         if self.ui.cb_auto.isChecked():
@@ -152,7 +172,7 @@ class AppDialog(QtGui.QWidget):
         if val == 'From Render Settings':
             w, h = self._get_maya_render_resolution()
             if self.is_anamorphic:
-                aspect_ratio = float(w / h)
+                aspect_ratio = float(w) / float(h)
                 h = float(h / aspect_ratio)
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
@@ -191,7 +211,7 @@ class AppDialog(QtGui.QWidget):
         if val == 'From Viewport':
             w, h = self._get_maya_window_resolution()
             if self.is_anamorphic:
-                aspect_ratio = float(w / h)
+                aspect_ratio = float(w) / float(h)
                 h = float(h / aspect_ratio)
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
@@ -200,7 +220,7 @@ class AppDialog(QtGui.QWidget):
         elif val == 'From Render Settings':
             w, h = self._get_maya_render_resolution()
             if self.is_anamorphic:
-                aspect_ratio = float(w / h)
+                aspect_ratio = float(w) / float(h)
                 h = float(h / aspect_ratio)
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
@@ -261,6 +281,8 @@ class AppDialog(QtGui.QWidget):
         try:
             # FRAME RANGE: from maya scene
             start_frame, end_frame, self.is_anamorphic = self.pbMngr.get_frame_range()
+            if self.is_anamorphic:
+                self.ui.cb_anamorphic.setChecked(True)
             self._app.logger.info("set_default_ui_data: start_frame, end_frame = {0}, {1}".format(start_frame,
                                                                                                   end_frame))
             self.ui.le_frame_start.setText(str(start_frame))
