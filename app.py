@@ -19,7 +19,7 @@ from sgtk.platform import Application
 
 logger = sgtk.platform.get_logger(__name__)
 
-__version__ = '0.0.05'
+__version__ = '0.0.06'
 
 
 class PlayblastBase(Application):
