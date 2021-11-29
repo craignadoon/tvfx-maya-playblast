@@ -361,7 +361,6 @@ class AppDialog(QtGui.QWidget):
             'percent': float(self.ui.sb_scale.value()) * 100,
             'width': width,
             'height': height,
-
             'offScreen': True if self.ui.checkBox.isChecked() else False,
             'framePadding': int(self.ui.sb_padding.value()),
             'filename': self.pbMngr.get_temp_output(extension),  # self.pbMngr.fofrmat_output_path(),
@@ -370,10 +369,6 @@ class AppDialog(QtGui.QWidget):
         self.pbMngr.set_pass_type(self.pass_type)
         self.pbMngr.set_camera_type(self.camera_type)
         self.pbMngr.set_focal_length(self.ui.le_focal_length.text())
-
-        # description = 'FocalLength: {},\n PassType: {},\n CameraType: {},\n Comments: {}\n'.format(
-        #     self.ui.le_focal_length.text(), self.pass_type, self.camera_type, self.ui.le_comments.text()
-        # )
 
         description = 'Playblast Data:\n\n{}'.format(tabulate.tabulate(
             [

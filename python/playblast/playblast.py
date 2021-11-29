@@ -1,22 +1,14 @@
 # coding=utf-8
-import datetime
-import glob
 import pprint
-import shutil
-import subprocess
+
 import tempfile
 
 import os
 import re
 
-import OpenImageIO
 import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya
 import sgtk
-
-import tank
-from tank import path_cache
-from sgtk.util import filesystem, LocalFileStorageManager
 
 try:
     from sgtk.platform.qt import QtCore, QtGui
@@ -195,7 +187,7 @@ class PlayblastManager(object):
         self._app.logger.debug(os.path.exists(self.mayaOutputPath))
 
         if file_ext == "avi":
-            shutil.copyfile(self.mayaOutputPath, self.playblastPath)
+            sgtk.util.filesystem.copy_file(self.mayaOutputPath, self.playblastPath)
         else:
             dir_path = os.path.dirname(self.mayaOutputPath)
             base_seq_name, hashes, ext = os.path.basename(self.mayaOutputPath).split(".")
@@ -220,7 +212,7 @@ class PlayblastManager(object):
                 source = self.mayaOutputPath % frame_num
                 dest = self.playblastPath % frame_num
                 self._app.logger.debug('Copying {} -> {}'.format(os.path.basename(source), dest))
-                shutil.copy(source, dest)
+                sgtk.util.filesystem.copy_file(source, dest)
 
             self.emitter("Playblast sequence copied to: {}".format(os.path.dirname(self.playblastPath)))
 
@@ -236,7 +228,7 @@ class PlayblastManager(object):
             ffmpeg_mov = self.slate.create_internal_mov(slate, self.playblastParams['startTime'])
             self._app.logger.debug("createPlayblast: ffmpeg_mov = {}".format(ffmpeg_mov))
 
-            shutil.copy(ffmpeg_mov, self.playblast_mov_path)
+            sgtk.util.filesystem.copy_file(ffmpeg_mov, self.playblast_mov_path)
 
             self._app.logger.debug("self.playblast_mov_path(ffmpeg movie) = {}".format(self.playblast_mov_path))
             pb_name, file_ext = os.path.basename(self.playblast_mov_path).split(".")
@@ -550,6 +542,9 @@ class PlayblastManager(object):
                 'sg_path_to_movie': movie_to_upload,
                 'sg_path_to_frames': self.playblastPath,
                 'sg_version_type': 'Artist Version',
+                'sg_task': self._context.task or None,
+                'sg_first_frame': self.playblastParams['startTime'],
+                'sg_last_frame': self.playblastParams['endTime']
             }
         )
 
