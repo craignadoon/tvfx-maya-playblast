@@ -50,8 +50,9 @@ def show_dialog(app_instance, version_str='0.0.1'):
     # to be carried out by toolkit.
     _app = sgtk.platform.current_bundle()
     if not _app.context.entity:
-        QtGui.QMessageBox.warning(None, 'Task Context not Found!!',  'Open/Save file from SG!!!!!!!!!!!!')
+        QtGui.QMessageBox.warning(None, 'Unable to identify opened file',  'Open/Save file from ShotGrid!')
         return
+
     AppDialog.__version__ = version_str
     app_instance.engine.show_dialog("Maya Playblast - v{}".format(version_str),  # window title
                                     app_instance,  # playblast instance
@@ -98,19 +99,9 @@ class AppDialog(QtGui.QWidget):
         # - A Shotgun API instance, via self._app.shotgun
         # - A tk API instance, via self._app.tk
         self._app = sgtk.platform.current_bundle()
-
-        # if not self._app.context.entity:
-        #     QtGui.QMessageBox.warning(self, 'Task Context not Found!!',
-        #                               'Kindly open file from Shotgrid menu!!!!!!!!!!!!')
-        #     self.destroy_app()
-            # return
-            # self.close()
         self.context = None
 
-        # self.pbMngr = PlayblastManager(self._app, self.context, partial(self.set_status, 2000))
-        # self.pbMngr = PlayblastManager(self._app, self.context, self.set_status)
         self.pbMngr = PlayblastManager(self._app, self.context)
-        self.is_anamorphic = False
         self.set_default_ui_data()
 
         # logging happens via a standard toolkit logger
@@ -122,10 +113,27 @@ class AppDialog(QtGui.QWidget):
         self.ui.pb_refresh.clicked.connect(self._on_pb_refresh)
         self.ui.sb_scale.valueChanged.connect(self._on_sb_change)
         self.ui.cb_auto.stateChanged.connect(self._on_cb_auto_change)
+        self.ui.cb_anamorphic.stateChanged.connect(self._on_cb_anamorphic_change)
         self.ui.createPlayblast.setFocus()
         self.resize(500, 250)
         self._on_cb_auto_change()
         self._on_sb_change()
+
+    def _on_cb_anamorphic_change(self, val):
+        self._app.logger.debug("Anamorphic: ".format(val))
+        self.is_anamorphic = val
+
+        resolution_source = str(self.ui.cb_resolution.currentText())
+        if resolution_source == 'From Render Settings':
+            w, h = self._get_maya_render_resolution()
+            if self.is_anamorphic:
+                aspect_ratio = float(w) / float(h)
+                self._app.logger.debug("Aspect Ratio: {}".format(aspect_ratio))
+                h = int(h*1.0 / aspect_ratio*1.0)
+            self.ui.sb_res_w.setValue(w)
+            self.ui.sb_res_h.setValue(h)
+            self._on_cb_auto_change()
+            self.set_status('Resolution: {}x{}'.format(w, h))
 
     def _on_cb_auto_change(self):
         if self.ui.cb_auto.isChecked():
@@ -152,8 +160,8 @@ class AppDialog(QtGui.QWidget):
         if val == 'From Render Settings':
             w, h = self._get_maya_render_resolution()
             if self.is_anamorphic:
-                aspect_ratio = float(w / h)
-                h = float(h / aspect_ratio)
+                aspect_ratio = w * 1.0 / h * 1.0
+                h = h * 1.0 / aspect_ratio * 1.0
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
             self._on_cb_auto_change()
@@ -191,8 +199,8 @@ class AppDialog(QtGui.QWidget):
         if val == 'From Viewport':
             w, h = self._get_maya_window_resolution()
             if self.is_anamorphic:
-                aspect_ratio = float(w / h)
-                h = float(h / aspect_ratio)
+                aspect_ratio = w * 1.0 / h * 1.0
+                h = h * 1.0 / aspect_ratio * 1.0
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
             self.ui.pb_refresh.hide()
@@ -200,8 +208,8 @@ class AppDialog(QtGui.QWidget):
         elif val == 'From Render Settings':
             w, h = self._get_maya_render_resolution()
             if self.is_anamorphic:
-                aspect_ratio = float(w / h)
-                h = float(h / aspect_ratio)
+                aspect_ratio = w * 1.0 / h * 1.0
+                h = h * 1.0 / aspect_ratio * 1.0
             self.ui.sb_res_w.setValue(w)
             self.ui.sb_res_h.setValue(h)
             self.ui.pb_refresh.show()
@@ -261,6 +269,8 @@ class AppDialog(QtGui.QWidget):
         try:
             # FRAME RANGE: from maya scene
             start_frame, end_frame, self.is_anamorphic = self.pbMngr.get_frame_range()
+            if self.is_anamorphic:
+                self.ui.cb_anamorphic.setChecked(True)
             self._app.logger.info("set_default_ui_data: start_frame, end_frame = {0}, {1}".format(start_frame,
                                                                                                   end_frame))
             self.ui.le_frame_start.setText(str(start_frame))
@@ -391,7 +401,7 @@ class AppDialog(QtGui.QWidget):
 
     def get_rv_path(self):
         if os.name == 'nt':
-            paths = glob.glob(r'C:\Program Files\Shotgun\*\bin\rv.exe')
+            paths = glob.glob(r'C:\Program Files\Sh*\*\bin\rv.exe')
         else:
             paths = glob.glob('/opt/rv/*/bin/rv')
 
@@ -413,7 +423,7 @@ class AppDialog(QtGui.QWidget):
         overridePlayblastParams = self.gatherUiData()
 
         # self.ui.status_bar.showMessage('User input gathered', msecs=2000)
-        self.set_status('Play blast in process')
+        self.set_status('Playblast in process')
         playblastFile, entity = self.pbMngr.createPlayblast(overridePlayblastParams)
         self.set_status('')
         QtGui.QMessageBox.information(self, 'Playblast created:',

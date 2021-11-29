@@ -1,15 +1,18 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# ============================================================================
+# Copyright (C) 2021 Track Visual Effects LTD, All Rights Reserved.
 #
-# CONFIDENTIAL AND PROPRIETARY
+# The coded instructions, statements, computer programs, and/or related
+# material (collectively the "Data") in these files contain unpublished
+# information proprietary to Track Visual Effects LTD, which is
+# protected by IP Protection law.
 #
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
-# Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
-# not expressly granted therein are reserved by Shotgun Software Inc.
-
-import os
-import sys
+# Author: rdevarkonda@trackvfx.com
+# Module: app.py
+# ============================================================================
+"""Playblast app
+"""
 
 import sgtk
 from sgtk.platform import Application
@@ -17,28 +20,6 @@ from sgtk.platform import Application
 logger = sgtk.platform.get_logger(__name__)
 
 __version__ = '0.0.05'
-
-_third_mapping = {
-    'nt': 'windows',
-    'posix': 'linux'
-}
-
-resources_path = os.path.abspath(os.path.join(
-    os.path.abspath(__file__),
-    os.pardir,  # app location
-    'resources'))
-
-third_party = os.path.abspath(os.path.join(
-    resources_path,
-    'third-party',
-    _third_mapping[os.name]
-))
-
-
-for sys_path in [third_party]:
-    logger.info('Adding {} into sys.path'.format(sys_path))
-    if sys_path not in sys.path:
-        sys.path.append(sys_path)
 
 
 class PlayblastBase(Application):
