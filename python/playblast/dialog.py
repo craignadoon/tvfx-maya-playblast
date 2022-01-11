@@ -139,6 +139,7 @@ class AppDialog(QtGui.QWidget):
     def _on_cb_auto_change(self):
         if self.ui.cb_auto.isChecked():
             width_value = int(self.ui.sb_res_w.value())
+            print(width_value)
             scale_value = float(2048.0 / width_value)
             if scale_value != round(scale_value, 2):
                 scale_value = scale_value - 0.01
@@ -197,6 +198,7 @@ class AppDialog(QtGui.QWidget):
             self.ui.lbl_resolution_size_hint.hide()
 
     def _toggle_custom_res_type(self, val):
+        print("_toggle_custom_res_type", )
         if val == 'From Viewport':
             w, h = self._get_maya_window_resolution()
             if self.is_anamorphic:

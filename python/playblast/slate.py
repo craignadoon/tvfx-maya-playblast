@@ -24,11 +24,9 @@ if not ffmpeg:
 class Slate(object):
     BLANK_SLATE_PATH = os.path.abspath(BASE_DIR.replace('/python/playblast', '/resources/track_slate.png'))
     FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/DroidSans.ttf').replace(":", "\:")
-    TAHOMA_FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/tahoma.ttf')
-    DEJAVUSANS_BOLD_FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/DejaVuSans-Bold.ttf')
-    FONT_SCALE = 0.013
-    LINE_SPACING = 70
-    LINE_LENGTH = 90
+    FONT_SCALE = 0.0090
+    LINE_SPACING = 60
+    LINE_LENGTH = 70
 
     def __init__(self, app, playblastParams, playblast_path, focal_length):
         """
@@ -106,17 +104,17 @@ class Slate(object):
 
         drawtext_string = ("pad=ceil(iw/2)*2:ceil(ih/2)*2,"
                            "select='gte(n\,0)',drawtext=start_number={first}:"
-                           "fontfile={font_file}:text='%{n}':"
+                           "fontfile='{font_file}':text='%{n}':"
                            "x=w*0.98-text_w:y=h*0.92:fontsize={font_size}+2:fontcolor=DAF7A6,"
-                           "drawtext=fontfile={font_file}:text='{shotname}':"
+                           "drawtext=fontfile='{font_file}':text='{shotname}':"
                            "x=w*0.50:y=h*0.92:fontsize={font_size}:fontcolor=DAF7A6,"
-                           "drawtext=fontfile={font_file}:text='{project}':"
+                           "drawtext=fontfile='{font_file}':text='{project}':"
                            "x=w*0.50:y=h*0.02:fontsize={font_size}:fontcolor=DAF7A6,"
-                           "drawtext=fontfile={font_file}:text='{artist}':"
+                           "drawtext=fontfile='{font_file}':text='{artist}':"
                            "x=w*0.02:y=h*0.92:fontsize={font_size}:fontcolor=DAF7A6," 
-                           "drawtext=fontfile={font_file}:text='{camera}':"
+                           "drawtext=fontfile='{font_file}':text='{camera}':"
                            "x=w*0.02:y=h*0.02:fontsize={font_size}:fontcolor=DAF7A6," 
-                           "drawtext=text='{date_time}':x=w*0.98-text_w:y=h*0.02:"
+                           "drawtext=fontfile='{font_file}':text='{date_time}':x=w*0.90:y=h*0.02:"
                            "fontsize={font_size}:fontcolor=DAF7A6").format(first=first, n='{n}', focal=focal,
                                                                            project=project, shotname=shotname,
                                                                            artist=artist, camera=camera,
@@ -156,7 +154,7 @@ class Slate(object):
                     "text={text}:"
                     "fontcolor=white:"
                     "fontsize={font_scale}*h:"
-                    "fontfile=\"{font_file}\":"
+                    "fontfile='{font_file}':"
                     "x=w*0.18{x_offset}:"
                     "y=h*{y_offset}+{i}*{line_spacing},"
                     )
@@ -200,13 +198,13 @@ class Slate(object):
             # ("'Shot ID\:\ '", "'{id}'".format(id=self.slate_data['shot_id'])),
             ("'Shot Name\:\ '", "'{name}'".format(name=self.slate_data['shot_name'])),
             ("'Project Name\:\ '", "'{name}'".format(name=self.slate_data['project_name'])),
-            ("'Version\:\ '", "'{version}'".format(version="V%s" % str(self.slate_data['playblast_version']).zfill(3))),
+            ("'Version\:\ '", "'{version}'".format(version="v%s" % str(self.slate_data['playblast_version']).zfill(3))),
             ("'Frames\:\ '", "'{first}-{last} ({range}f)'"
              .format(first=self.pb_params['startTime'],
                      last=self.pb_params['endTime'],
                      range=self.pb_params['endTime'] - self.pb_params['startTime'] + 1)),
-            ("'Resolution\:\ '", "'{w}x{h}'".format(w=self.pb_params['width'],
-                                                      h=self.pb_params['height'])),
+            ("'FPS\:\ '", "'{frame_rate}'".format(frame_rate=self.slate_data['frame_rate'])),
+            ("'Resolution\:\ '", "'{w}x{h}'".format(w=self.pb_params['width'], h=self.pb_params['height'])),
             ("'Focal Length\:\ '", "'{focal}'".format(focal=self.slate_data['focal_length'])),
             # ("''", "''"),
             ("'Artist\:\ '", "'{artist}'".format(artist=self.slate_data['artist'])),

@@ -1,14 +1,22 @@
 # coding=utf-8
+import datetime
+import glob
 import pprint
-
+import shutil
+import subprocess
 import tempfile
 
 import os
 import re
 
+import OpenImageIO
 import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya
 import sgtk
+
+import tank
+from tank import path_cache
+from sgtk.util import filesystem, LocalFileStorageManager
 
 try:
     from sgtk.platform.qt import QtCore, QtGui
@@ -51,7 +59,7 @@ class PlayblastManager(object):
         self.mayaOutputPath = None
         self.playblastPath = None
         self.playblast_mov_path = None
-        self.upload_to_sg = True 
+        self.upload_to_sg = True
         self.playblastParams = {
             'offScreen': False,
             'percent': 50,
@@ -126,9 +134,11 @@ class PlayblastManager(object):
                                                         [['id', 'is', self._context.entity['id']]],
                                                         ['sg_head_in', 'sg_tail_out', 'sg_original_pixel_aspect_ratio',
                                                          'sg_image_type'])
-        start_frame = int(shot_info['sg_head_in'] or start)
-        last_frame = int(shot_info['sg_tail_out'] or end)
-        # is_anamorphic = True if float(shot_info['sg_original_pixel_aspect_ratio']) in (2, 2.0) else False
+        if shot_info['sg_head_in'] and shot_info['sg_tail_out']:
+            start_frame = int(shot_info['sg_head_in'])  # or start
+            last_frame = int(shot_info['sg_tail_out'])  # or end
+        else:
+            start_frame = last_frame = 0
         is_anamorphic = shot_info['sg_image_type'] == 'Ana'
         self._app.logger.debug("Frame Range: {0}-{1}, Anamorphic: {2}".format(start_frame, last_frame, is_anamorphic))
 
