@@ -50,7 +50,8 @@ def show_dialog(app_instance, version_str='0.0.1'):
     # to be carried out by toolkit.
     _app = sgtk.platform.current_bundle()
     if not _app.context.entity:
-        QtGui.QMessageBox.warning(None, 'Unable to identify opened file',  'Open/Save file from ShotGrid!')
+        QtGui.QMessageBox.warning(None, 'Task Context not Found!',
+                                  'Kindly open file using "ShotGrid -> Open..." menu option!')
         return
 
     AppDialog.__version__ = version_str
@@ -412,7 +413,8 @@ class AppDialog(QtGui.QWidget):
         :return:
         """
         if self.ui.le_comments.text() == "":
-            QtGui.QMessageBox.warning(self, 'comments error', 'Comment should be mandatory')
+            QtGui.QMessageBox.warning(self, 'Input Error',
+                                      'Please add your work description in comment box and retry.')
             return
 
         overridePlayblastParams = self.gatherUiData()
@@ -421,7 +423,14 @@ class AppDialog(QtGui.QWidget):
         scene_end_time = int(cmds.playbackOptions(q=True, maxTime=True))
 
         if int(overridePlayblastParams['startTime']) != scene_start_time or int(overridePlayblastParams['endTime']) != scene_end_time:
-            QtGui.QMessageBox.warning(self, 'Frame range..', "Scene and SG shot frame range are doesn't match")
+            ret = QtGui.QMessageBox.warning(self, 'Frame range..',
+                                            "Scene(%s-%s) and SG(%s-%s) shot frame range doesn't match\nDo you want to continue with Scene range?" % (
+                                                scene_start_time, scene_end_time, overridePlayblastParams['startTime'],
+                                                overridePlayblastParams['endTime']),
+                                            QtGui.QMessageBox.Yes, QtGui.QMessageBox.Abort)
+            if ret == QtGui.QMessageBox.Abort:
+                return
+
             overridePlayblastParams['startTime'] = scene_start_time
             overridePlayblastParams['endTime'] = scene_end_time
 
@@ -437,12 +446,12 @@ class AppDialog(QtGui.QWidget):
         except:
             pass
 
-        if entity:
-            url = 'https://trackvfx.shotgunstudio.com/detail/{}/{}'.format(entity['type'], entity['id'])
-            if os.name == 'posix':
-                subprocess.Popen(['xdg-open', url], close_fds=True)
-            elif os.name == 'nt':
-                os.startfile(url)
+        # if entity:
+        #     url = 'https://trackvfx.shotgunstudio.com/detail/{}/{}'.format(entity['type'], entity['id'])
+        #     if os.name == 'posix':
+        #         subprocess.Popen(['xdg-open', url], close_fds=True)
+        #     elif os.name == 'nt':
+        #         os.startfile(url)
 
     def hide_elements(self, value=False):
         self.ui.le_frame_start.setVisible(value)
