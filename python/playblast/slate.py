@@ -23,6 +23,7 @@ if not ffmpeg:
 
 class Slate(object):
     BLANK_SLATE_PATH = os.path.abspath(BASE_DIR.replace('/python/playblast', '/resources/track_slate.png'))
+    FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/DroidSans.ttf').replace(":", "\:")
     TAHOMA_FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/tahoma.ttf')
     DEJAVUSANS_BOLD_FONT_FILE_PATH = BASE_DIR.replace('/python/playblast', '/resources/DejaVuSans-Bold.ttf')
     FONT_SCALE = 0.013
@@ -120,7 +121,7 @@ class Slate(object):
                                                                            project=project, shotname=shotname,
                                                                            artist=artist, camera=camera,
                                                                            date_time=datetime.date.today(),
-                                                                           font_file=self.TAHOMA_FONT_FILE_PATH,
+                                                                           font_file=self.FONT_FILE_PATH,
                                                                            font_size=font_size)
         self._app.logger.debug("drawtext_string={}".format(drawtext_string))
         ffmpeg_args = [ffmpeg,
@@ -188,7 +189,7 @@ class Slate(object):
                                             x_offset=x_offset,
                                             y_offset=y_offset,
                                             i=i,
-                                            font_file=self.DEJAVUSANS_BOLD_FONT_FILE_PATH)
+                                            font_file=self.FONT_FILE_PATH)
 
         return ffmpeg_stuff
 

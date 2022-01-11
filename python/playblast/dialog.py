@@ -417,6 +417,14 @@ class AppDialog(QtGui.QWidget):
 
         overridePlayblastParams = self.gatherUiData()
 
+        scene_start_time = int(cmds.playbackOptions(q=True, minTime=True))
+        scene_end_time = int(cmds.playbackOptions(q=True, maxTime=True))
+
+        if int(overridePlayblastParams['startTime']) != scene_start_time or int(overridePlayblastParams['endTime']) != scene_end_time:
+            QtGui.QMessageBox.warning(self, 'Frame range..', "Scene and SG shot frame range are doesn't match")
+            overridePlayblastParams['startTime'] = scene_start_time
+            overridePlayblastParams['endTime'] = scene_end_time
+
         # self.ui.status_bar.showMessage('User input gathered', msecs=2000)
         self.set_status('Playblast in process')
         playblastFile, entity = self.pbMngr.createPlayblast(overridePlayblastParams)

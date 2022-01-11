@@ -208,11 +208,12 @@ class PlayblastManager(object):
             self._app.logger.debug("seq_name= {0}, hashes= {1}, ext = {2}".format(seq_name, hashes, ext))
 
             for i, frame_num in enumerate(range(self.playblastParams['startTime'],
-                                                self.playblastParams['endTime'])):
+                                                self.playblastParams['endTime']+1)):
                 source = self.mayaOutputPath % frame_num
                 dest = self.playblastPath % frame_num
                 self._app.logger.debug('Copying {} -> {}'.format(os.path.basename(source), dest))
-                sgtk.util.filesystem.copy_file(source, dest)
+                if os.path.exists(source):
+                    sgtk.util.filesystem.copy_file(source, dest)
 
             self.emitter("Playblast sequence copied to: {}".format(os.path.dirname(self.playblastPath)))
 
