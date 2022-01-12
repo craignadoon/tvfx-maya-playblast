@@ -584,7 +584,8 @@ class PlayblastManager(object):
             version_number,
             # comment=self.description,
             published_file_type=self.publish_type,
-            version_entity=playblast_version_entity
+            version_entity=playblast_version_entity,
+            sg_fields={'sg_pass_type': self.pass_type.lower()}
         )
 
         self._app.log_info("Playblast uploaded to shotgun")
