@@ -247,7 +247,7 @@ class PlayblastManager(object):
         if not self.upload_to_sg:
             return self.playblastPath, None
         self._app.logger.debug("Uploading to sg = {}".format(self.playblast_mov_path))
-        version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
+        version_entity = self.upload_to_shotgun(publish_name=pb_name,  # [:-5],
                                                 version_number=playblast_version)
 
         return self.playblastPath, version_entity
