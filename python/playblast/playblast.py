@@ -246,6 +246,7 @@ class PlayblastManager(object):
 
         if not self.upload_to_sg:
             return self.playblastPath, None
+
         self._app.logger.debug("Uploading to sg = {}".format(self.playblast_mov_path))
         version_entity = self.upload_to_shotgun(publish_name=pb_name[:-5],
                                                 version_number=playblast_version)
@@ -545,7 +546,7 @@ class PlayblastManager(object):
         playblast_version_entity = self._context.sgtk.shotgun.create(
             'Version',
             {
-                'code': publish_name,
+                'code': os.path.basename(movie_to_upload),
                 'entity': self._context.entity,
                 'project': self._context.project,
                 'user': self._context.user,

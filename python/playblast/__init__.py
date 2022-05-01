@@ -9,3 +9,6 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 from . import dialog
+from . import playblast
+
+PlayblastManager = playblast.PlayblastManager

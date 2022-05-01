@@ -51,3 +51,7 @@ class PlayblastBase(Application):
         # now register the command with the engine
         self.engine.register_command(self.get_setting("name", "Playblast..."),
                                      menu_callback)
+
+    def create_playblast_manager(self):
+        return self.import_module('playblast').PlayblastManager(
+            self, self.engine.context)
