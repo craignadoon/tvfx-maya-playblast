@@ -44,9 +44,9 @@ class Slate(object):
         self.pb_path = playblast_path
 
         start_time = self.slate_data['start_time']
-        self._app.logger.debug("create_slate: start_time = {}".format(start_time))
-        self._app.logger.debug("create_slate: self.pb_path = {}".format(self.pb_path))
-        self._app.logger.debug("create_slate: self.pb_path % start_time = {}".format(self.pb_path % start_time))
+        self._app.logger.info("create_slate: start_time = {}".format(start_time))
+        self._app.logger.info("create_slate: self.pb_path = {}".format(self.pb_path))
+        self._app.logger.info("create_slate: self.pb_path % start_time = {}".format(self.pb_path % start_time))
 
         first_frame_path = self.pb_path % start_time
         self._app.logger.debug("create_slate: first_frame_path = {}".format(first_frame_path))
@@ -64,7 +64,11 @@ class Slate(object):
         ffmpeg_args = [ffmpeg, '-y', '-i', self.BLANK_SLATE_PATH, '-i', first_frame_path,
                        '-filter_complex', internal_args, slate_path]
 
-        proc = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Prevents the cmd.exe dialog from appearing on Windows.
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        proc = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=startupinfo)
         stdout, stderr = proc.communicate()
 
         self._app.logger.debug("stdout = {}".format(stdout))
@@ -132,9 +136,15 @@ class Slate(object):
                        ]
 
         self._app.logger.debug("Trying {}".format(' '.join(ffmpeg_args)))
+        self._app.logger.info("Creating slate frame for the media...")
 
         try:
+            # Prevents the cmd.exe dialog from appearing on Windows.
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
             proc = subprocess.Popen(ffmpeg_args,  # shell=True,
+                                    startupinfo = startupinfo,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             _stdout, _stderr = proc.communicate()
