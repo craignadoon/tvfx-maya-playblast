@@ -55,6 +55,7 @@ class PlayblastManager(object):
         self.pass_type = None
         self.description = None
         self.camera_type = None
+        self.note_type = 'Internal'
         self.focal_length = None
         self.mayaOutputPath = None
         self.playblastPath = None
@@ -560,16 +561,17 @@ class PlayblastManager(object):
             }
         )
 
-        self._context.sgtk.shotgun.create(
-            'Note',
-            data={
-                'note_links': [self._context.entity, playblast_version_entity] or None,
-                'project': self._context.project,
-                'subject': 'Playblast from {}'.format(os.path.basename(movie_to_upload)),
-                'content': self.description,
-                'sg_note_type': 'Internal'
-            }
-        )
+        if self.description:
+            self._context.sgtk.shotgun.create(
+                'Note',
+                data={
+                    'note_links': [self._context.entity, playblast_version_entity] or None,
+                    'project': self._context.project,
+                    'subject': 'Playblast from {}'.format(os.path.basename(movie_to_upload)),
+                    'content': self.description,
+                    'sg_note_type': self.note_type
+                }
+            )
 
         self._context.sgtk.shotgun.upload(
             'Version', playblast_version_entity['id'], movie_to_upload, 'sg_uploaded_movie'

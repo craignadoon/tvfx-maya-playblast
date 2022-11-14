@@ -1,0 +1,55 @@
+
+deployment_group:
+  prod:
+    pipeline_id: 461
+    name: tvfx-maya-playblast
+    package_file: tvfx-maya-playblast
+
+shotgun:
+  server_url: "https://trackvfx.shotgunstudio.com"
+  script_name: package-manager
+  api_key: "zos*po0vxacfxadmqyeKovcku"
+
+# remote repo which would get cloned and yml file will be updated
+# with new deployed version
+config_path: X:/swdist/dev_share/mgangaiwar/tk/tk-basic2-deflect
+bundle_name: tvfx-maya-playblast
+
+# all the dirs, files which need to be packaged
+includes:
+  - python
+  - resources
+  - app.py
+  - icon_256.png
+  - info.yml
+  - LICENSE
+  - README.md
+  - style.qss
+
+
+pre_build:
+  Windows_AMD64:
+  |
+    echo "  # Removing all pyc files.."
+    DEL /S *.pyc
+    echo "  # Updating version in app.py .."
+    C:/Python27/python.exe -c "with open('app.py') as fh: d = fh.read();import re;print re.findall('''(__version__.+.)(\d+.\d+.\d+)''', d)[0][-1]" > version_str
+    set /p ver_str=<version_str
+    echo "  # Replacing %ver_str% -> %PACKAGE_VERSION% app.py .."
+    C:/Python27/python.exe -c "with open('app.py') as rh: d = rh.read(); import os; nd=d.replace(os.getenv('ver_str'), os.getenv('PACKAGE_VERSION'));ph=open('app.py', 'w');ph.write(nd)"
+    rm version_str
+
+
+post_deploy:
+  Windows_AMD64:
+  |
+    echo ""
+    echo "updating git origin..."
+    echo ""
+    echo "  # Creating tag in git.."
+    git commit -am "bumped up version: "v${PACKAGE_VERSION}""
+    # git push origin master
+    git tag -a "v${PACKAGE_VERSION}" --force
+    # git push origin "v${PACKAGE_VERSION}"
+    git push --tags
+    git push 
