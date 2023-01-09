@@ -55,7 +55,7 @@ class PlayblastManager(object):
         self.pass_type = None
         self.description = None
         self.camera_type = None
-        self.note_type = 'Internal'
+        self.note_type = 'Artist Version'
         self.focal_length = None
         self.mayaOutputPath = None
         self.playblastPath = None
